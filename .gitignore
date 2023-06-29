@@ -19,3 +19,14 @@
 
 # Go workspace file
 go.work
+
+# vscode rest-client 
+*.http
+*.env
+
+# logs
+logs/
+*.log
+
+# config file
+*.json
