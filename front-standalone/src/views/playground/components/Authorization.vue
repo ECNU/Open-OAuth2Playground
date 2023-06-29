@@ -31,28 +31,28 @@ const toggleLayout = () => {
 
 // Http Info
 const requestInfo = reactive({
-  meta:{
-    method:'',
-    path:'',
-    proto:'',
-    host:'',
+  meta: {
+    method: '',
+    path: '',
+    proto: '',
+    host: '',
   },
-  header:'',
-  body:'',
-  code:'',
+  header: '',
+  body: '',
+  code: '',
 });
 const responseInfo = reactive({
-  meta:{
-    method:'',
-    path:'',
-    proto:'',
-    host:'',
-    status:'',
+  meta: {
+    method: '',
+    path: '',
+    proto: '',
+    host: '',
+    status: '',
   },
-  header:'',
-  strHeader:'',
-  body:'',
-  code:'',
+  header: '',
+  strHeader: '',
+  body: '',
+  code: '',
 });
 const rawJsonInfo = reactive({});
 const exampleInfo = reactive({});
@@ -126,7 +126,7 @@ function handleGetAuthorizationCode() {
         lss.addItem(cs);
       }
       window.location.href = initialAddress.value;
-      
+
     }
   }
 }
@@ -169,7 +169,7 @@ async function handleGetToken() {
         Object.assign(responseInfo, response);
         Object.assign(rawJsonInfo, rawjson);
         Object.assign(exampleInfo, example);
-        
+
         window.history.replaceState({}, document.title, window.location.pathname);
         updateReqAndRes();
       } else {
@@ -438,9 +438,11 @@ const handleDrag = (floatButton, container) => {
 
           <el-scrollbar class="http-render">
             <!-- 这里写request的相关信息 -->
-
+            <highlightjs autodetect :code="requestInfo.code" />
+            <highlightjs :class="{ 'bodyWrap': isWrapRes }" autodetect :code="requestInfo.body" />
           </el-scrollbar>
-          <el-checkbox style="position: absolute;bottom: 30px;left: 20px;" v-model="isWrapReq" label="Wrap Lines" size="large" />
+          <el-checkbox style="position: absolute;bottom: 30px;left: 20px;" v-model="isWrapReq" label="Wrap Lines"
+            size="large" />
         </div>
       </div>
       <div class="http-right">
@@ -450,9 +452,11 @@ const handleDrag = (floatButton, container) => {
         <div class="http-content" style="text-align: start;padding: 0em;position: relative;">
           <el-scrollbar class="http-render">
             <!-- 这里写response的相关信息 -->
-
+            <highlightjs autodetect :code="responseInfo.strHeader" />
+            <highlightjs :class="{ 'bodyWrap': isWrapRes }" autodetect :code="responseInfo.body" />
           </el-scrollbar>
-          <el-checkbox style="position: absolute;bottom: 30px;left: 20px;" v-model="isWrapRes" label="Wrap Lines" size="large" />
+          <el-checkbox style="position: absolute;bottom: 30px;left: 20px;" v-model="isWrapRes" label="Wrap Lines"
+            size="large" />
         </div>
       </div>
       <el-button class="http-button http-side-button" @click="toggleLayout">Switch</el-button>
@@ -624,6 +628,7 @@ const handleDrag = (floatButton, container) => {
 .http-content {
   height: 100%;
   border: 1px solid #e5e5e5;
+
   .http-info-type {}
 
   .http-render {
@@ -639,5 +644,4 @@ const handleDrag = (floatButton, container) => {
 
 body .el-scrollbar__wrap {
   overflow-x: hidden;
-}
-</style>
+}</style>
