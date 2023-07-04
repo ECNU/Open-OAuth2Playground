@@ -50,3 +50,4 @@ cfg.json
 package-lock.json
 pnpm-lock.yaml
 tsconfig.tsbuildinfo
+front-standalone/dist/*

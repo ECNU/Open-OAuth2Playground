@@ -40,6 +40,7 @@ type EndpointConfig struct {
 HttpConfig Http 配置
 */
 type HttpConfig struct {
+	RouteBase  string   `json:"route_base"`
 	Listen     string   `json:"listen"`
 	CORS       []string `json:"cors"`
 	TrustProxy []string `json:"trust_proxy"`

@@ -9,9 +9,14 @@ import (
 
 func Routes(r *gin.Engine) {
 
-	r.GET("/playground/v1/config", getConfig)
+	r.Static(g.Config().Http.RouteBase+"css/", "front-standalone/dist/css/")
+	r.Static(g.Config().Http.RouteBase+"js/", "front-standalone/dist/js/")
+	r.StaticFile(g.Config().Http.RouteBase, "front-standalone/dist/index.html")
+	r.StaticFile(g.Config().Http.RouteBase+"favicon.ico", "front-standalone/dist/favicon.ico")
 
-	playground := r.Group("/playground/v1")
+	r.GET(g.Config().Http.RouteBase+"v1/config", getConfig)
+
+	playground := r.Group(g.Config().Http.RouteBase + "v1")
 	playground.Use(IPLimitCheck)
 	playground.Use(NoCache())
 	playground.POST("/oauth2/client_credentials", clientCredentials)

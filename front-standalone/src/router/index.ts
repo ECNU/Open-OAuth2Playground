@@ -3,7 +3,7 @@ import Layout from '/@/views/Layout.vue';
 
 const routes = [
     {
-        path: '/',
+        path: process.env.VUE_APP_ROUTER_BASE,
         name: 'Layout',
         component: Layout,
         meta: {title: 'OO2P'}
@@ -11,7 +11,7 @@ const routes = [
 ];
 
 const router = createRouter({
-    history: createWebHistory("/playground/"),
+    history: createWebHistory("/"),
     routes: routes
 });
 

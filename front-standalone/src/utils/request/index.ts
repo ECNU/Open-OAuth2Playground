@@ -13,9 +13,10 @@ class HttpService{
         const proto = process.env.VUE_APP_API_PROTO;
         const host = process.env.VUE_APP_API_HOST;
         const port = process.env.VUE_APP_API_PORT?.length>0?":".concat(process.env.VUE_APP_API_PORT):"";
-        const route = process.env.VUE_APP_API_ROUTE;
+        const route = process.env.VUE_APP_ROUTER_BASE+process.env.VUE_APP_API_VERSION;
+        const baseURL = host ? proto+"://"+host+port+route : route;
         this.http = axios.create({
-            baseURL: proto+"://"+host+port+route,
+            baseURL: baseURL,
             timeout: 60000,
         });
 
