@@ -156,9 +156,9 @@ async function handleGetToken() {
       if(code === 0){
         const {request, response, rawjson, example} = data;
         const {access_token, refresh_token} = rawjson;
-        currentToken.value = access_token;
-        currentRefreshToken.value = refresh_token;
-        s3CurrentToken.value = access_token;
+        currentToken.value = access_token??"Uncertain";
+        currentRefreshToken.value = refresh_token??"Uncertain";
+        s3CurrentToken.value = access_token??"Uncertain";
         toClipboard(access_token).finally(() => {
           ElMessage.success(`已复制access_token: ${access_token}`);
         });
@@ -198,9 +198,9 @@ function handleRefreshToken() {
       if(code === 0){
         const {request, response, rawjson, example} = data;
         const {access_token, refresh_token} = rawjson;
-        currentToken.value = access_token;
-        currentRefreshToken.value = refresh_token;
-        s3CurrentToken.value = access_token;
+        currentToken.value = access_token??"Uncertain";
+        currentRefreshToken.value = refresh_token??"Uncertain";
+        s3CurrentToken.value = access_token??"Uncertain";
         toClipboard(access_token).finally(() => {
           ElMessage.success(`已复制新access_token: ${access_token}`);
         });
