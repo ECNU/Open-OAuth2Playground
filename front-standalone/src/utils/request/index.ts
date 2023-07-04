@@ -10,8 +10,12 @@ class HttpService{
     private readonly http!: AxiosInstance;
 
     constructor() {
+        const proto = process.env.VUE_APP_API_PROTO;
+        const host = process.env.VUE_APP_API_HOST;
+        const port = process.env.VUE_APP_API_PORT?.length>0?":".concat(process.env.VUE_APP_API_PORT):"";
+        const route = process.env.VUE_APP_API_ROUTE;
         this.http = axios.create({
-            baseURL: process.env.VUE_APP_API_BASE,
+            baseURL: proto+"://"+host+port+route,
             timeout: 60000,
         });
 
