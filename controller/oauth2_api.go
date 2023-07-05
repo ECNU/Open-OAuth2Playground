@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/base64"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/ECNU/Open-OAuth2Playground/g"
@@ -34,6 +35,16 @@ func api(c *gin.Context) {
 		c.JSON(http.StatusOK, handleError(err.Error()))
 		return
 	}
+	apiAddrUrl, err := url.Parse(reqData.ApiAddr)
+	if err != nil {
+		c.JSON(http.StatusOK, handleError(err.Error()))
+		return
+	}
+	if !models.InSliceStr(apiAddrUrl.Host, g.Config().TrustDomain) {
+		c.JSON(http.StatusOK, handleError("api addr not in trust domain"))
+		return
+	}
+
 	method := reqData.Method
 	apiAddr := reqData.ApiAddr
 	header := reqData.Header
