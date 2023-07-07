@@ -68,8 +68,8 @@ onMounted(() => {
           <el-col :xs="20" :sm="22" :md="14" :lg="14" :xl="14" class="contentRow">
             <el-radio-group v-model="grantTypes" size="small">
               <el-radio-button label="1">Authorization Code</el-radio-button>
-              <el-radio-button label="2">Resource Owner Password Credentials</el-radio-button>
-              <el-radio-button label="3">Client Credentials</el-radio-button>
+         <!-- todo     <el-radio-button label="2">Resource Owner Password Credentials</el-radio-button> --> 
+         <!-- todo     <el-radio-button label="3">Client Credentials</el-radio-button> -->
             </el-radio-group>
           </el-col>
           <el-col :xs="4" :sm="2" :md="2" :lg="2" :xl="2" class="contentRow">
@@ -83,21 +83,21 @@ onMounted(() => {
                   </el-button>
                 </template>
                 <el-descriptions title="Config" :column="1" border>
-                  <el-descriptions-item label="trust_domain">
+                  <el-descriptions-item label="Trust Domain">
                     <el-tag v-for="item in configData.trust_domain" :key="item" style="margin-right: 5px">
                       {{ item }}
                     </el-tag>
                   </el-descriptions-item>
-                  <el-descriptions-item label="authorization_endpoint">
+                  <el-descriptions-item label="Authorization Endpoint">
                     {{ configData.authorization_endpoint }}
                   </el-descriptions-item>
-                  <el-descriptions-item label="token_endpoint">
+                  <el-descriptions-item label="Token Endpoint">
                     {{ configData.token_endpoint }}
                   </el-descriptions-item>
-                  <el-descriptions-item label="userinfo_endpoint">
+                  <el-descriptions-item label="Userinfo Endpoint">
                     {{ configData.userinfo_endpoint }}
                   </el-descriptions-item>
-                  <el-descriptions-item label="default_scope">
+                  <el-descriptions-item label="Default Scope">
                     {{ configData.default_scope }}
                   </el-descriptions-item>
                   <el-descriptions-item label="Client Id">

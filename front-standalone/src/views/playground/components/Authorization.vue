@@ -105,10 +105,10 @@ function handleS1Change() {
 
 function handleGetAuthorizationCode() {
   if(s1Data.scope.length === 0){
-    ElMessage.error('scope不能为空');
+    ElMessage.error('scope cannot be empty');
     return;
   }else if(s1Data.state.length === 0){
-    ElMessage.error('state不能为空');
+    ElMessage.error('state cannot be empty');
     return;
   }else{
     if(props.cfgData.client_id.length === 0){
@@ -136,13 +136,13 @@ const currentRefreshToken = ref("");
 
 async function handleGetToken() {
   if(code.value.length === 0){
-    ElMessage.error('code不能为空');
+    ElMessage.error('code cannot be empty');
     return;
   }else if(props.cfgData.client_id.length === 0){
-    ElMessage.error('client_id不能为空');
+    ElMessage.error('client_id cannot be empty');
     return;
   }else if(props.cfgData.client_secret.length === 0){
-    ElMessage.error('client_secret不能为空');
+    ElMessage.error('client_secret cannot be empty');
     return;
   }else{
     const dataObject = {
@@ -160,7 +160,7 @@ async function handleGetToken() {
         currentRefreshToken.value = refresh_token??"Uncertain";
         s3CurrentToken.value = access_token??"Uncertain";
         toClipboard(access_token).finally(() => {
-          ElMessage.success(`已复制access_token: ${access_token}`);
+          ElMessage.success(`get access_token success: ${access_token}`);
         });
         Object.assign(requestInfo, request);
         Object.assign(responseInfo, response);
@@ -202,7 +202,7 @@ function handleRefreshToken() {
         currentRefreshToken.value = refresh_token??"Uncertain";
         s3CurrentToken.value = access_token??"Uncertain";
         toClipboard(access_token).finally(() => {
-          ElMessage.success(`已复制新access_token: ${access_token}`);
+          ElMessage.success(`refresh access_token success: ${access_token}`);
         });
         Object.assign(requestInfo, request);
         Object.assign(responseInfo, response);
@@ -240,10 +240,10 @@ function handleMethodChange(value) {
 
 async function handleRequestAPI() {
   if(requestUri.value.length === 0){
-    ElMessage.error('请求地址不能为空');
+    ElMessage.error('api address cannot be empty');
     return;
   }else if(s3CurrentToken.value.length === 0){
-    ElMessage.error('access_token不能为空');
+    ElMessage.error('access_token is empty, please get the access_token firstly');
     return;
   }else{
     const dataObject = {
@@ -357,7 +357,7 @@ const handleDrag = (floatButton, container) => {
                 </el-button>
               </template>
             </el-input>
-            <h4 style="text-align: left;margin: 0">Current Token</h4>
+            <h4 style="text-align: left;margin: 0">Current Access Token</h4>
             <div class="tokenArea">
               <strong><code>{{ currentToken }}</code></strong>
             </div>
@@ -376,7 +376,7 @@ const handleDrag = (floatButton, container) => {
               <el-option v-for="item in methodOptions" :key="item.label" :label="item.label" :value="item.value"
                          :disabled="item.disabled"/>
             </el-select>
-            <h4 style="text-align: left;margin: 0">Token</h4>
+            <h4 style="text-align: left;margin: 0">Access Token</h4>
             <el-input v-model="s3CurrentToken" placeholder="access_token"/>
             <el-button type="primary" @click="handleRequestAPI" class="t-button">
               Fetch Data
@@ -398,8 +398,8 @@ const handleDrag = (floatButton, container) => {
             <highlightjs autodetect :code="requestInfo.code"/>
             <highlightjs :class="{ 'bodyWrap': isWrapRes }" autodetect :code="requestInfo.body"/>
           </el-scrollbar>
-          <el-checkbox style="position: absolute;bottom: 30px;left: 20px;" v-model="isWrapReq" label="Wrap Lines"
-                       size="large"/>
+       <!--   <el-checkbox style="position: absolute;bottom: 30px;left: 20px;" v-model="isWrapReq" label="Wrap Lines"
+                       size="large"/> -->
         </div>
       </div>
       <div class="http-right">
