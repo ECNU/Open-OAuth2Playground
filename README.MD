@@ -1,7 +1,9 @@
 # Open-OAuth2Playground
 Open-OAuth2Playground: 开箱即用的开源版 OAuth2-Playground 
 
-![](https://github.com/ECNU/Open-OAuth2Playground/blob/main/demo.png?raw=true)
+[English](./README_en.md) | [中文](./README.md)
+
+![](./demo.png)
 
 - [Open-OAuth2Playground](#open-oauth2playground)
 	- [安装运行](#安装运行)
@@ -21,6 +23,7 @@ Open-OAuth2Playground: 开箱即用的开源版 OAuth2-Playground
 				- [前端部署](#前端部署)
 				- [定制化前端菜单](#定制化前端菜单)
 		- [API](#api)
+		- [鸣谢](#鸣谢)
 
 
 ## 安装运行
@@ -157,3 +160,9 @@ VUE_APP_API_VERSION=v1
 
 ### API
 todo
+
+
+### 鸣谢
+本项目受 Google 的 [OAuth 2.0 Playground](https://developers.google.com/oauthplayground/) 启发
+
+感谢 Google 提供的优秀的工具。
