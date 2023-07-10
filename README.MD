@@ -4,22 +4,23 @@ Open-OAuth2Playground: 开箱即用的开源版 OAuth2-Playground
 ![](https://github.com/ECNU/Open-OAuth2Playground/blob/main/demo.png?raw=true)
 
 - [Open-OAuth2Playground](#open-oauth2playground)
-  - [安装运行](#安装运行)
-    - [二进制直接运行](#二进制直接运行)
-      - [Linux](#linux)
-      - [Windows](#windows)
-    - [systemctl 托管](#systemctl-托管)
-    - [编译打包](#编译打包)
-      - [后端编译](#后端编译)
-      - [前端编译](#前端编译)
-      - [统一打包](#统一打包)
-    - [配置](#配置)
-      - [后端配置](#后端配置)
-        - [后端配置说明](#后端配置说明)
-      - [前端配置](#前端配置)
-        - [前端配置说明](#前端配置说明)
-        - [前端部署](#前端部署)
-    - [API](#api)
+	- [安装运行](#安装运行)
+		- [二进制直接运行](#二进制直接运行)
+			- [Linux](#linux)
+			- [Windows](#windows)
+		- [systemctl 托管](#systemctl-托管)
+		- [编译打包](#编译打包)
+			- [后端编译](#后端编译)
+			- [前端编译](#前端编译)
+			- [统一打包](#统一打包)
+		- [配置](#配置)
+			- [后端配置](#后端配置)
+				- [后端配置说明](#后端配置说明)
+			- [前端配置](#前端配置)
+				- [前端配置说明](#前端配置说明)
+				- [前端部署](#前端部署)
+				- [定制化前端菜单](#定制化前端菜单)
+		- [API](#api)
 
 
 ## 安装运行
@@ -146,8 +147,13 @@ VUE_APP_API_VERSION=v1
 ##### 前端部署
 项目的前端部分可以独立部署单独发布，也可以由后端来发布。
 
-默认由后端发布，此时前端的 `VUE_APP_API_HOST`,`VUE_APP_API_PROTO`, `VUE_APP_API_PORT` 等配置项可以忽略。此时编译后的前端代码应该部署相对后端二进制文件的 front-standalone/dist 目录下。
+默认由后端发布，此时前端的 `VUE_APP_API_HOST`,`VUE_APP_API_PROTO`, `VUE_APP_API_PORT` 等配置项可以忽略。此时编译打包后的前端代码应该部署相对后端二进制文件的 front-standalone/dist 目录下。
 
 如果前端独立部署，则需要在编译时，配置好 `VUE_APP_API_HOST`,`VUE_APP_API_PROTO`, `VUE_APP_API_PORT` 等配置项，并确保前端的域名在后端的跨域列表内。
+
+##### 定制化前端菜单
+
+项目的菜单部分，对应 `front-standalone/src/views/Layourt.vue` 文件，可以根据需要修改 `el-menu-item` 的内容，然后编译打包即可。
+
 ### API
 todo
