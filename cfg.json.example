@@ -1,0 +1,25 @@
+{
+	"logger": {
+		"dir": "logs/",
+		"level": "DEBUG",
+		"keepHours": 24
+	},
+	"endpoints": {
+		"authorization": "http://cas.example.org/cas/oauth2.0/authorize",
+		"token": "http://cas.example.org/cas/oauth2.0/accessToken",
+		"userinfo": "http://cas.example.org/cas/oauth2.0/profile"
+	},
+	"iplimit": {
+		"enable": false,
+		"trust_ip": ["127.0.0.1","::1"]
+	},
+	"http": {
+		"route_base":"/",
+		"trust_proxy": ["127.0.0.1", "::1"],
+		"cors": ["http://127.0.0.1:8080","http://localhost:8080"],
+		"listen": "0.0.0.0:80"
+	},
+	"trust_domain": ["cas.example.org", "localhost"],
+	"default_scope": "Basic",
+	"timeout": 10
+}
