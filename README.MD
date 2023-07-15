@@ -39,14 +39,14 @@ Open-OAuth2Playground 是一个仿 Google [OAuth 2.0 Playground](https://develop
 ```
 mkdir Open-OAuth2Playground
 cd Open-OAuth2Playground/
-wget https://github.com/ECNU/Open-OAuth2Playground/releases/download/v0.1.1/Open-OAuth2Playground-linux-0.1.1.tar.gz
+wget https://github.com/ECNU/Open-OAuth2Playground/releases/download/v0.2.0/Open-OAuth2Playground-linux-0.2.0.tar.gz
 tar -zxvf Open-OAuth2Playground-0.1.1-linux-amd64.tar.gz
 ./control start
 ```
 访问你服务器的 80 端口即可使用。
 
 #### Windows
-如果只需要在 Windows 上运行测试，可以直接下载 [release] 中的 `Open-OAuth2Playground-windows-0.1.1.zip`，解压后运行 `Open-OAuth2Playground.exe` 即可。
+如果只需要在 Windows 上运行测试，可以直接下载 [release] 中的 `Open-OAuth2Playground-windows-0.2.0.zip`，解压后运行 `Open-OAuth2Playground.exe` 即可。
 
 ### systemctl 托管
 假定部署在 `/opt/Open-OAuth2Playground` 目录下，如果部署在其他目录修改 `playground.service` 中的 `WorkingDirectory` 和 `ExecStart` 两个字段即可。

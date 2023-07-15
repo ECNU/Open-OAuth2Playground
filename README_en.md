@@ -38,14 +38,14 @@ Download the latest [release] package from [release](https://github.com/ECNU/Ope
 ```
 mkdir Open-OAuth2Playground
 cd Open-OAuth2Playground/
-wget https://github.com/ECNU/Open-OAuth2Playground/releases/download/v0.1.1/Open-OAuth2Playground-linux-0.1.1.tar.gz
+wget https://github.com/ECNU/Open-OAuth2Playground/releases/download/v0.2.0/Open-OAuth2Playground-linux-0.2.0.tar.gz
 tar -zxvf Open-OAuth2Playground-0.1.1-linux-amd64.tar.gz
 ./control start
 ```
 Visit port 80 of your server to use it.
 
 #### Windows
-If you only need to run tests on Windows, you can download `Open-OAuth2Playground-windows-0.1.1.zip` from [release], unzip it and run `Open-OAuth2Playground.exe`.
+If you only need to run tests on Windows, you can download `Open-OAuth2Playground-windows-0.2.0.zip` from [release], unzip it and run `Open-OAuth2Playground.exe`.
 
 ### Systemctl Hosting
 Assuming deployment in the `/opt/Open-OAuth2Playground` directory, if deployed in other directories, modify the `WorkingDirectory` and `ExecStart` fields in `playground.service`.
