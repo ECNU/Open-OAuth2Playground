@@ -39,7 +39,7 @@ Download the latest [release] package from [release](https://github.com/ECNU/Ope
 mkdir Open-OAuth2Playground
 cd Open-OAuth2Playground/
 wget https://github.com/ECNU/Open-OAuth2Playground/releases/download/v0.2.0/Open-OAuth2Playground-linux-0.2.0.tar.gz
-tar -zxvf Open-OAuth2Playground-0.1.1-linux-amd64.tar.gz
+tar -zxvf Open-OAuth2Playground-0.2.0-linux-amd64.tar.gz
 ./control start
 ```
 Visit port 80 of your server to use it.

@@ -40,7 +40,7 @@ Open-OAuth2Playground 是一个仿 Google [OAuth 2.0 Playground](https://develop
 mkdir Open-OAuth2Playground
 cd Open-OAuth2Playground/
 wget https://github.com/ECNU/Open-OAuth2Playground/releases/download/v0.2.0/Open-OAuth2Playground-linux-0.2.0.tar.gz
-tar -zxvf Open-OAuth2Playground-0.1.1-linux-amd64.tar.gz
+tar -zxvf Open-OAuth2Playground-0.2.0-linux-amd64.tar.gz
 ./control start
 ```
 访问你服务器的 80 端口即可使用。
