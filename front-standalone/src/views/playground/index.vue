@@ -68,8 +68,8 @@ onMounted(() => {
           <el-col :xs="20" :sm="22" :md="14" :lg="14" :xl="14" class="contentRow">
             <el-radio-group v-model="grantTypes" size="small">
               <el-radio-button label="1">Authorization Code</el-radio-button>
-         <!-- todo     <el-radio-button label="2">Resource Owner Password Credentials</el-radio-button> --> 
-         <!-- todo     <el-radio-button label="3">Client Credentials</el-radio-button> -->
+              <el-radio-button label="2">Resource Owner Password Credentials</el-radio-button>
+              <el-radio-button label="3">Client Credentials</el-radio-button>
             </el-radio-group>
           </el-col>
           <el-col :xs="4" :sm="2" :md="2" :lg="2" :xl="2" class="contentRow">

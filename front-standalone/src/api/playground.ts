@@ -11,6 +11,7 @@ type Result = {
     }
 }
 
+/** authorization_code */
 /** Step 2 */
 /** Get access_token with code */
 export const fetchACToken = (data) => {
@@ -27,3 +28,14 @@ export const fetchRefreshToken = (data) => {
 export const fetchApiData = (data) => {
     return http.post<Result>("/api", data);
 }
+
+
+/** Client Credentials */
+export const fetchACTokenByClient = (data) => {
+    return http.post<Result>("/oauth2/client_credentials", data);
+};
+
+/** Password */
+export const fetchACTokenByPassword = (data) => {
+    return http.post<Result>("/oauth2/password", data);
+};

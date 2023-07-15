@@ -56,7 +56,6 @@ const responseInfo = reactive({
 });
 const rawJsonInfo = reactive({});
 const exampleInfo = reactive({});
-const isWrapReq = ref(true);//控制body是否自动换行
 const isWrapRes = ref(true);//控制body是否自动换行
 
 function updateReqAndRes() {

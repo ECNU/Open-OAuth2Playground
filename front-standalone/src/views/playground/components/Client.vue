@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { generateRandomString } from "/@/utils/x";
-import { LocalStorageService } from "/@/utils/persistence"
 import useClipboard from 'vue-clipboard3';
-import { fetchACToken, fetchApiData, fetchRefreshToken } from "/@/api/playground";
+import { fetchACTokenByClient, fetchApiData } from "/@/api/playground";
 
 const props = defineProps({
   cfgData: {
@@ -24,150 +22,101 @@ const props = defineProps({
   },
 });
 const {toClipboard} = useClipboard();
-const isHorizontal = ref(true);
+const isHorizontal = ref(false);
 const toggleLayout = () => {
   isHorizontal.value = !isHorizontal.value;
 };
 
 // Http Info
-const requestInfo = reactive({});
-const responseInfo = reactive({});
-const oauthInfo = reactive({});
+const requestInfo = reactive({
+  meta: {
+    method: '',
+    path: '',
+    proto: '',
+    host: '',
+  },
+  header: '',
+  body: '',
+  code: '',
+});
+const responseInfo = reactive({
+  meta: {
+    method: '',
+    path: '',
+    proto: '',
+    host: '',
+    status: '',
+  },
+  header: '',
+  strHeader: '',
+  body: '',
+  code: '',
+});
+const rawJsonInfo = reactive({});
 const exampleInfo = reactive({});
+const isWrapRes = ref(true);//控制body是否自动换行
+
+function updateReqAndRes() {
+  requestInfo.body = atob(requestInfo.body);
+  requestInfo.code = JSON.stringify(requestInfo.header, undefined, 0.1)
+  //去掉首尾的{}
+  requestInfo.code = requestInfo.code.slice(1, requestInfo.code.length - 1);
+  requestInfo.code = requestInfo.meta.method + ' ' + requestInfo.meta.path + ' ' + requestInfo.meta.proto + requestInfo.code;
+  requestInfo.code = requestInfo.code + 'Host: ' + requestInfo.meta.host;
+  requestInfo.code = requestInfo.code.replaceAll('"', '');
+
+  // responseInfo.meta = res["data"]["response"]["meta"];
+  // responseInfo.body = res["data"]["response"]["body"];
+  // responseInfo.body = atob(responseInfo.body);
+  responseInfo.body = decodeURIComponent(escape(window.atob(responseInfo.body)))
+  // responseInfo.header = res["data"]["response"]["header"];
+  responseInfo.strHeader = JSON.stringify(responseInfo.header, undefined, 0.1)
+  //去掉首尾的{}
+  responseInfo.strHeader = responseInfo.strHeader.slice(1, responseInfo.strHeader.length - 1)
+  responseInfo.strHeader = responseInfo.meta.proto + ' ' + responseInfo.meta.status + responseInfo.strHeader;
+  responseInfo.strHeader = responseInfo.strHeader.replaceAll('"', '')
+}
 
 // Step 1
 const activeName = ref('1');
-const s1Data = reactive({
-  authorization_endpoint: "",
-  redirect_uri: window.location.href.split("?")[0],
-  scope: "",
-  response_type: "code",
-  state: "",
-});
-
-const initialAddress = ref("");
-
-function handleS1Change() {
-  initialAddress.value = s1Data.authorization_endpoint.concat(
-      "?response_type=code",
-      s1Data.scope?.length > 0 ? "&scope=".concat(s1Data.scope) : "",
-      props.cfgData.client_id?.length > 0 ? "&client_id=".concat(props.cfgData.client_id) : "",
-      "&redirect_uri=",
-      s1Data.redirect_uri,
-      s1Data.state?.length > 0 ? "&state=".concat(s1Data.state) : ""
-  );
-}
-
-function handleGetAuthorizationCode() {
-  if(s1Data.scope.length === 0){
-    ElMessage.error('scope不能为空');
-    return;
-  }else if(s1Data.state.length === 0){
-    ElMessage.error('state不能为空');
-    return;
-  }else{
-    if(props.cfgData.client_id.length === 0){
-      ElMessage.error('client_id is empty, please click the config button on the right side, and check the configuration');
-      return;
-    }else{
-      const lss = new LocalStorageService();
-      const ci = {key: "id", value: props.cfgData.client_id};
-      const cs = {key: "secret", value: props.cfgData.client_secret};
-      lss.addItem(ci);
-      if(cs.value.length > 0){
-        lss.addItem(cs);
-      }
-      window.location.href = initialAddress.value;
-    }
-  }
-}
-
-// Step 2
-const code = ref("");
-const state = ref("");
 const currentToken = ref("");
-const currentRefreshToken = ref("");
 
-async function handleGetToken() {
-  if(code.value.length === 0){
-    ElMessage.error('code不能为空');
-    return;
-  }else if(props.cfgData.client_id.length === 0){
-    ElMessage.error('client_id不能为空');
-    return;
-  }else if(props.cfgData.client_secret.length === 0){
-    ElMessage.error('client_secret不能为空');
-    return;
-  }else{
-    const dataObject = {
-      code: code.value,
-      client_id: props.cfgData.client_id,
-      client_secret: props.cfgData.client_secret,
-      scope: props.cfgData.default_scope,
-      redirect_uri: window.location.href.split("?")[0]
-    };
-    fetchACToken(dataObject).then(({code,msg,data}) => {
-      if(code===0){
-        const {request, response, oauth2, example} = data;
-        const {access_token, refresh_token} = oauth2;
-        currentToken.value = access_token;
-        currentRefreshToken.value = refresh_token;
-        s3CurrentToken.value = access_token;
-        toClipboard(access_token).finally(() => {
-          ElMessage.success(`已复制access_token: ${access_token}`);
-        });
-        Object.assign(requestInfo, request);
-        Object.assign(responseInfo, response);
-        Object.assign(oauthInfo, oauth2);
-        Object.assign(exampleInfo, example);
-
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }else{
-        ElMessage.error(msg);
-      }
-    });
-
-  }
-}
-
-function handleRefreshToken() {
+async function handleGetTokenByClient() {
   if(props.cfgData.client_id.length === 0){
-    ElMessage.error('client_id is empty, please click the config button on the right side, and check the configuration');
+    ElMessage.error('client_id cannot be empty');
     return;
   }else if(props.cfgData.client_secret.length === 0){
-    ElMessage.error('client_secret is empty, please click the config button on the right side, and check the configuration');
-    return;
-  }else if(currentRefreshToken.value.length === 0){
-    ElMessage.error('refresh_token is empty, please get the access_token firstly');
+    ElMessage.error('client_secret cannot be empty');
     return;
   }else{
     const dataObject = {
-      refresh_token: currentRefreshToken.value,
       client_id: props.cfgData.client_id,
       client_secret: props.cfgData.client_secret
     };
-
-    fetchRefreshToken(dataObject).then(({code,msg,data}) => {
+    fetchACTokenByClient(dataObject).then(({code, msg, data}) => {
       if(code === 0){
-        const {request, response, oauth2, example} = data;
-        const {access_token, refresh_token} = oauth2;
-        currentToken.value = access_token;
-        currentRefreshToken.value = refresh_token;
-        s3CurrentToken.value = access_token;
+        const {request, response, rawjson, example} = data;
+        const {access_token} = rawjson;
+        currentToken.value = access_token??"Uncertain";
+        s3CurrentToken.value = access_token??"Uncertain";
         toClipboard(access_token).finally(() => {
-          ElMessage.success(`已复制新access_token: ${access_token}`);
+          ElMessage.success(`get access_token success: ${access_token}`);
         });
         Object.assign(requestInfo, request);
         Object.assign(responseInfo, response);
-        Object.assign(oauthInfo, oauth2);
+        Object.assign(rawJsonInfo, rawjson);
         Object.assign(exampleInfo, example);
+
+        window.history.replaceState({}, document.title, window.location.pathname);
+        updateReqAndRes();
       }else{
         ElMessage.error(msg);
-        return;
       }
     });
+
   }
 }
+
 
 // Step 3
 const requestUri = ref("");
@@ -192,10 +141,10 @@ function handleMethodChange(value) {
 
 async function handleRequestAPI() {
   if(requestUri.value.length === 0){
-    ElMessage.error('请求地址不能为空');
+    ElMessage.error('api address cannot be empty');
     return;
   }else if(s3CurrentToken.value.length === 0){
-    ElMessage.error('access_token不能为空');
+    ElMessage.error('access_token is empty, please get the access_token firstly');
     return;
   }else{
     const dataObject = {
@@ -206,13 +155,14 @@ async function handleRequestAPI() {
       header: {},
       http_body: ""
     };
-    fetchApiData(dataObject).then(({code,msg,data}) => {
+    fetchApiData(dataObject).then(({code, msg, data}) => {
       if(code === 0){
-        const {request, response, oauth2, example} = data;
+        const {request, response, rawjson, example} = data;
         Object.assign(requestInfo, request);
         Object.assign(responseInfo, response);
-        Object.assign(oauthInfo, oauth2);
+        Object.assign(rawJsonInfo, rawjson);
         Object.assign(exampleInfo, example);
+        updateReqAndRes();
       }else{
         ElMessage.error(msg);
         return;
@@ -222,89 +172,100 @@ async function handleRequestAPI() {
 }
 
 watch(props.cfgData, (newValue) => {
-  s1Data.authorization_endpoint = newValue.authorization_endpoint;
-  s1Data.scope = newValue.default_scope;
-  initialAddress.value = newValue.authorization_endpoint.concat(
-      "?response_type=code",
-      newValue.default_scope?.length > 0 ? "&scope=".concat(newValue.default_scope) : "",
-      newValue.client_id?.length > 0 ? "&client_id=".concat(newValue.client_id) : "",
-      "&redirect_uri=",
-      s1Data.redirect_uri,
-      s1Data.state?.length > 0 ? "&state=".concat(s1Data.state) : ""
-  );
   requestUri.value = newValue.userinfo_endpoint;
   s3TokenType.value = newValue.access_token_type;
 });
 
 onMounted(() => {
-  // handleDrag(agS1Ref.value.$el, agS1ContainerRef.value.$el);
-  s1Data.state = generateRandomString(props.cfgData.default_scope);
-
-  const urlParams = new URLSearchParams(window.location.search);
-  if(urlParams.get('code')?.length > 0){
-    code.value = urlParams.get('code');
-    state.value = urlParams.get('state');
-    activeName.value = '2';
-    // window.history.replaceState({}, document.title, window.location.pathname);
-  }
   requestUri.value = props.cfgData.userinfo_endpoint;
   s3TokenType.value = props.cfgData.access_token_type;
 
 });
 
 
-const agS1ContainerRef = ref(null);
-const agS1Ref = ref(null);
-const handleDrag = (floatButton, container) => {
-  // todo: 浮动球拖动效果考虑的因素比较多，bug点也比较多，后期有时间看看能否完善
-  // todo: 1. 需要同时考虑手机和pc页面不同的场景元素移动计算有所区别
-  // todo: 2. 拖动过程中，浮动球的位置需要跟随鼠标移动，但是浮动球的位置需要相对在容器内，就需要做边缘检测
-  // todo: 3. 拖动的整个周期需要阻止单击事件流
-  // todo: 4. 拖动刚开始需要检测用户是否是真的想要拖动，可以检测拖动的时间或距离来综合判断
-  // todo: 5. pc端还要考虑浏览器的的选择事件
-  // todo: 6. 边缘吸附的时候需要考虑浮动球的位置，是吸附在容器的边缘还是容器内的边缘
-
-  let isDragging = false;
-  let mouseOffset = {x: 0, y: 0};
-  let touchOffset = {x: 0, y: 0};
-
-  floatButton.addEventListener('mousedown', function (event) {
-
-  });
-
-  floatButton.addEventListener('touchstart', function (event) {
-
-  });
-
-  document.addEventListener('mousemove', function (event) {
-    if(isDragging){
-
-    }else{
-    }
-  });
-
-  document.addEventListener('touchmove', function (event) {
-    if(isDragging){
-
-    }else{
-    }
-  });
-
-  document.addEventListener('mouseup', function () {
-    isDragging = false;
-  });
-
-  document.addEventListener('touchend', function () {
-    isDragging = false;
-  });
-};
-
 </script>
 <template>
-  <div style="text-align: center;width:100%">TODO</div>
+  <el-col :xs="24" :sm="24" :md="8" :lg="8" :xl="8">
+    <div class="demo-collapse" id="main">
+      <el-collapse v-model="activeName" accordion>
+        <el-collapse-item class="el-collapse-item" name="1">
+          <template #title>
+            <span class="stepTitle">Step 1: Fetch token with Client Credentials</span>
+          </template>
+          <el-scrollbar class="fitSide">
+            <el-button type="primary" @click="handleGetTokenByClient" class="t-button">
+              Get Token
+            </el-button>
+
+            <h4 style="text-align: left;margin: 0">Current Access Token</h4>
+            <div class="tokenArea">
+              <strong><code>{{ currentToken }}</code></strong>
+            </div>
+          </el-scrollbar>
+        </el-collapse-item>
+        <el-collapse-item class="el-collapse-item" name="3">
+          <template #title>
+            <span class="stepTitle">Step 2: Request to API with the <code
+                style="color:#cd3221">access_token</code></span>
+          </template>
+          <el-scrollbar class="fitSide">
+            <h4 style="text-align: left;margin: 0">Request URI</h4>
+            <el-input v-model="requestUri" placeholder="Authorization Code"/>
+            <h4 style="text-align: left;margin: 0">Method(Currently, only get method is supported.)</h4>
+            <el-select v-model="requestMethod" @change="handleMethodChange">
+              <el-option v-for="item in methodOptions" :key="item.label" :label="item.label" :value="item.value"
+                         :disabled="item.disabled"/>
+            </el-select>
+            <h4 style="text-align: left;margin: 0">Access Token</h4>
+            <el-input v-model="s3CurrentToken" placeholder="access_token"/>
+            <el-button type="primary" @click="handleRequestAPI" class="t-button">
+              Fetch Data
+            </el-button>
+          </el-scrollbar>
+        </el-collapse-item>
+      </el-collapse>
+    </div>
+  </el-col>
+  <el-col :xs="24" :sm="24" :md="16" :lg="16" :xl="16">
+    <div class="http-container" :class="{ 'http-horizontal': isHorizontal }">
+      <div class="http-left">
+        <el-divider content-position="left" direction="horizontal" class="http-info-type">
+          <span>REQUEST INFO</span>
+        </el-divider>
+        <div class="http-content" style="text-align: start;padding:0px;position: relative;">
+
+          <el-scrollbar class="http-render">
+            <highlightjs autodetect :code="requestInfo.code"/>
+            <highlightjs :class="{ 'bodyWrap': isWrapRes }" autodetect :code="requestInfo.body"/>
+          </el-scrollbar>
+       <!--   <el-checkbox style="position: absolute;bottom: 30px;left: 20px;" v-model="isWrapReq" label="Wrap Lines"
+                       size="large"/> -->
+        </div>
+      </div>
+      <div class="http-right">
+        <el-divider content-position="left" direction="horizontal" class="http-info-type">
+          <span>RESPONSE INFO</span>
+        </el-divider>
+        <div class="http-content" style="text-align: start;padding: 0em;position: relative;">
+          <el-scrollbar class="http-render">
+            <highlightjs autodetect :code="responseInfo.strHeader"/>
+            <highlightjs :class="{ 'bodyWrap': isWrapRes }" autodetect :code="responseInfo.body"/>
+          </el-scrollbar>
+          <el-checkbox style="position: absolute;bottom: 30px;left: 20px;" v-model="isWrapRes" label="Wrap Lines"
+                       size="large"/>
+        </div>
+      </div>
+      <el-button class="http-button http-side-button" @click="toggleLayout">Switch</el-button>
+    </div>
+  </el-col>
 </template>
 
 <style scoped lang="less">
+.bodyWrap {
+  white-space: pre-line;
+  word-break: break-all;
+}
+
 :deep(.el-button) {
   margin-top: 10px;
   color: #fff;
@@ -462,7 +423,6 @@ const handleDrag = (floatButton, container) => {
   border: 1px solid #e5e5e5;
 
   .http-info-type {
-
   }
 
   .http-render {
@@ -478,5 +438,4 @@ const handleDrag = (floatButton, container) => {
 
 body .el-scrollbar__wrap {
   overflow-x: hidden;
-}
-</style>
+}</style>
