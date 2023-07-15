@@ -1,5 +1,9 @@
 # Open-OAuth2Playground
-Open-OAuth2Playground: 开箱即用的开源版 OAuth2-Playground 
+Open-OAuth2Playground 是一个仿 Google [OAuth 2.0 Playground](https://developers.google.com/oauthplayground/)  的开源版 OAuth2.0 Playground
+
+支持本地开箱即用，适合 OAuth2.0 的学习者测试学习 OAuth2.0 协议。
+
+当运用于服务端部署时，也非常适合与 OAuth2 的接口文档配合同步发布，方便第三方调用者快速的开发调试。
 
 [English](./README_en.md) | [中文](./README.md)
 

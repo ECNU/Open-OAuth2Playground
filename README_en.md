@@ -1,5 +1,9 @@
 # Open-OAuth2Playground
-Open-OAuth2Playground: An out-of-the-box open source version of OAuth2-Playground
+Open-OAuth2Playground is an open source version of OAuth2.0 Playground that mimics Google’s OAuth 2.0 Playground
+
+It supports local out-of-the-box use, suitable for OAuth2.0 learners to test and learn the OAuth2.0 protocol.
+
+When used for server-side deployment, it is also very suitable for synchronizing with the OAuth2 Server documentation, making it easy for third-party callers to quickly develop and debug.
 
 [English](./README_en.md) | [中文](./README.md)
 
