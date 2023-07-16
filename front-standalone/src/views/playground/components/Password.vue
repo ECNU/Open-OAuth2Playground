@@ -201,7 +201,7 @@ onMounted(() => {
       <el-collapse v-model="activeName" accordion>
         <el-collapse-item class="el-collapse-item" name="1">
           <template #title>
-            <span class="stepTitle">Step 2: Fetch token with Password</span>
+            <span class="stepTitle">Step 1: Fetch token with Password</span>
           </template>
           <el-scrollbar class="fitSide">
             <h4 style="text-align: left;margin: 0">Username</h4>
@@ -219,7 +219,7 @@ onMounted(() => {
         </el-collapse-item>
         <el-collapse-item class="el-collapse-item" name="3">
           <template #title>
-            <span class="stepTitle">Step 3: Request to API with the <code
+            <span class="stepTitle">Step 2: Request to API with the <code
                 style="color:#cd3221">access_token</code></span>
           </template>
           <el-scrollbar class="fitSide">
