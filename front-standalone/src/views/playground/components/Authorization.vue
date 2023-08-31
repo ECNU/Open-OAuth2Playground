@@ -154,7 +154,7 @@ async function handleGetToken() {
     fetchACToken(dataObject).then(({code, msg, data}) => {
       if(code === 0){
         const {request, response, rawjson, example} = data;
-        const {access_token, refresh_token} = rawjson;
+        const {access_token, refresh_token} = rawjson || {};;
         currentToken.value = access_token??"Uncertain";
         currentRefreshToken.value = refresh_token??"Uncertain";
         s3CurrentToken.value = access_token??"Uncertain";
@@ -196,7 +196,7 @@ function handleRefreshToken() {
     fetchRefreshToken(dataObject).then(({code, msg, data}) => {
       if(code === 0){
         const {request, response, rawjson, example} = data;
-        const {access_token, refresh_token} = rawjson;
+        const {access_token, refresh_token} = rawjson || {};;
         currentToken.value = access_token??"Uncertain";
         currentRefreshToken.value = refresh_token??"Uncertain";
         s3CurrentToken.value = access_token??"Uncertain";
