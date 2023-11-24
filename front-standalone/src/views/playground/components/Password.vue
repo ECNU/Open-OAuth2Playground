@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
-import { generateRandomString } from "/@/utils/x";
+import {ElMessage, FormInstance} from 'element-plus'
 import useClipboard from 'vue-clipboard3';
 import { fetchACTokenByPassword, fetchApiData } from "/@/api/playground";
 
@@ -108,12 +107,14 @@ async function handleGetTokenByPassword() {
     fetchACTokenByPassword(dataObject).then(({code, msg, data}) => {
       if(code === 0){
         const {request, response, rawjson, example} = data;
-        const {access_token} = rawjson;
-        currentToken.value = access_token??"Uncertain";
-        s3CurrentToken.value = access_token??"Uncertain";
-        toClipboard(access_token).finally(() => {
-          ElMessage.success(`get access_token success: ${access_token}`);
-        });
+        if (rawjson !== null) { // 认证错误时rawjson为null，要判断，不然报错
+          const {access_token} = rawjson;
+          currentToken.value = access_token??"Uncertain";
+          s3CurrentToken.value = access_token??"Uncertain";
+          toClipboard(access_token).finally(() => {
+            ElMessage.success(`get access_token success: ${access_token}`);
+          });
+        }
         Object.assign(requestInfo, request);
         Object.assign(responseInfo, response);
         Object.assign(rawJsonInfo, rawjson);
@@ -135,20 +136,47 @@ const requestUri = ref("");
 const requestMethod = ref("GET");
 const s3CurrentToken = ref("");
 const s3TokenType = ref("Bearer");
+const contentType = ref("application/json");
+const headerDialogVisible = ref(false);
+const bodyDialogVisible = ref(false);
+const newHeader = reactive({
+  name: '',
+  value: ''
+});
+const headerFormRef = ref<FormInstance>()
+const headerRules = reactive({
+  name: [{ required: true, message: 'Please enter header name', trigger: 'blur' }],
+  value: [{ required: true, message: 'Please enter header value', trigger: 'blur' }]
+});
+const additionalHeaders = reactive([]);
+const additionalBody = ref("")
 
 const methodOptions = [
   {label: 'GET', value: 'GET', disabled: false},
-  {label: 'POST', value: 'POST', disabled: true},
-  {label: 'PUT', value: 'PUT', disabled: true},
-  {label: 'DELETE', value: 'DELETE', disabled: true},
+  {label: 'POST', value: 'POST', disabled: false},
+  {label: 'PUT', value: 'PUT', disabled: false},
+  {label: 'DELETE', value: 'DELETE', disabled: false},
   {label: 'PATCH', value: 'PATCH', disabled: true},
   {label: 'HEAD', value: 'HEAD', disabled: true},
   {label: 'OPTIONS', value: 'OPTIONS', disabled: true}
 ];
 
+const contentTypeOptions = [
+  {label: 'application/json', value: 'application/json', disabled: false},
+  {label: 'application/atom+xml', value: 'application/atom+xml', disabled: true},
+  {label: 'text/plain', value: 'text/plain', disabled: true},
+  {label: 'text/csv', value: 'text/csv', disabled: true},
+  // {label: 'Custom', value: 'Custom', disabled: true}, // TODO：参考google，跳出添加header的dialog，header name = “Content-Type”,value由用户填
+]
+
 function handleMethodChange(value) {
   requestMethod.value = value;
   ElMessage.info(`当前请求方法: ${value}`);
+}
+
+function handleContentTypeChange(value) {
+  contentType.value = value;
+  ElMessage.info(`当前Content-Type: ${value}`);
 }
 
 async function handleRequestAPI() {
@@ -159,13 +187,20 @@ async function handleRequestAPI() {
     ElMessage.error('access_token is empty, please get the access_token firstly');
     return;
   }else{
+    // 将 additionalHeaders 数组转换对象
+    const additionalHeadersObject = additionalHeaders.reduce((map, header) => {
+      if (header.name && header.value) {
+        map[header.name] = header.value;
+      }
+      return map;
+    }, {});
     const dataObject = {
       method: requestMethod.value,
       api_addr: requestUri.value,
       access_token: s3CurrentToken.value,
       access_token_type: s3TokenType.value,
-      header: {},
-      http_body: ""
+      header: additionalHeadersObject,
+      http_body: additionalBody.value
     };
     fetchApiData(dataObject).then(({code, msg, data}) => {
       if(code === 0){
@@ -183,6 +218,43 @@ async function handleRequestAPI() {
   }
 }
 
+function isJsonResponse(header) {
+  const contentType = header["Content-Type"];
+  return contentType != null && contentType.includes("application/json");
+}
+
+function formatJson(jsonStr) {
+  // 格式化 JSON 内容
+  try {
+    let resStr = JSON.stringify(JSON.parse(jsonStr), null, '  ');
+    // console.log(resStr);
+    return resStr;
+  } catch (error) {
+    // 解析失败，返回原始内容
+    console.log('格式化json失败');
+    return jsonStr;
+  }
+}
+
+async function addHeader(headerForm) {
+  if (!headerForm)
+    return;
+  await headerForm.validate((valid, fields) => {
+    if (valid) {
+      additionalHeaders.push({name: newHeader.name, value: newHeader.value});
+      // 添加之后清空
+      newHeader.name = '';
+      newHeader.value = '';
+    } else {
+      console.log('error add', fields)
+    }
+  })
+}
+
+function deleteRow(index) {
+  additionalHeaders.splice(index, 1)
+}
+
 watch(props.cfgData, (newValue) => {
   requestUri.value = newValue.userinfo_endpoint;
   s3TokenType.value = newValue.access_token_type;
@@ -191,7 +263,8 @@ watch(props.cfgData, (newValue) => {
 onMounted(() => {
   requestUri.value = props.cfgData.userinfo_endpoint;
   s3TokenType.value = props.cfgData.access_token_type;
-
+  additionalHeaders.length = 0;
+  additionalBody.value = '';
 });
 
 </script>
@@ -225,11 +298,84 @@ onMounted(() => {
           <el-scrollbar class="fitSide">
             <h4 style="text-align: left;margin: 0">Request URI</h4>
             <el-input v-model="requestUri" placeholder="Authorization Code"/>
-            <h4 style="text-align: left;margin: 0">Method(Currently, only get method is supported.)</h4>
+            <h4 style="text-align: left;margin: 0">Method</h4>
             <el-select v-model="requestMethod" @change="handleMethodChange">
               <el-option v-for="item in methodOptions" :key="item.label" :label="item.label" :value="item.value"
                          :disabled="item.disabled"/>
             </el-select>
+            <el-row>
+              <el-col :span="6">
+                <el-button
+                    @click="headerDialogVisible = true"
+                    class="user-button">
+                  Add Headers
+                </el-button>
+              </el-col>
+              <el-col :span="8">
+                <el-button @click="bodyDialogVisible = true" class="user-button">
+                  Enter Request Body
+                </el-button>
+              </el-col>
+              <el-col :span="10" style="margin-top: 10px">
+                <el-select v-model="contentType" @change="handleContentTypeChange">
+                  <el-option v-for="item in contentTypeOptions" :key="item.label" :label="item.label" :value="item.value"
+                             :disabled="item.disabled"/>
+                </el-select>
+              </el-col>
+            </el-row>
+            <!-- header Dialog-->
+            <el-dialog v-model="headerDialogVisible" title="Headers">
+              <div>
+                <h4 style="display: flex">Add a header:</h4>
+                <el-form ref="headerFormRef" :inline="true" :model="newHeader" :rules="headerRules" style="display: flex">
+                  <el-form-item prop="name" style="width: 280px">
+                    <el-input v-model="newHeader.name" placeholder="header name"></el-input>
+                  </el-form-item>
+                  <el-form-item prop="value" style="width: 280px">
+                    <el-input v-model="newHeader.value" placeholder="header value"></el-input>
+                  </el-form-item>
+                  <el-form-item style="width: 260px">
+                    <el-button @click="addHeader(headerFormRef)" style="margin-bottom: 10px; margin-left: -10px">Add</el-button>
+                  </el-form-item>
+                </el-form>
+                <!-- 展示自定义的header-->
+                <el-table :data="additionalHeaders" border style="width: 100%">
+                  <el-table-column label="Header Name" width="260" > <!-- 一定要设置width，不然会报错-->
+                    <template v-slot="{ row }">
+                      {{ row.name }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="Header Value" width="260">
+                    <template v-slot="{ row }">
+                      {{ row.value }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column fixed="right" width="260">
+                    <template #default="scope">
+                      <el-button
+                          type="primary"
+                          size="small"
+                          @click="deleteRow(scope.$index)"
+                      >
+                        Remove
+                      </el-button>
+                    </template>
+                  </el-table-column>
+                </el-table>
+                <el-button @click="headerDialogVisible = false" style="display: flex">Close</el-button>
+              </div>
+            </el-dialog>
+            <!-- header Dialog-->
+            <el-dialog v-model="bodyDialogVisible" title="Request Body">
+              <h4 style="display: flex">Enter the data that will be added to the body of the request:</h4>
+              <el-input
+                  v-model="additionalBody"
+                  :rows="15"
+                  type="textarea"
+                  placeholder="Please input"
+              />
+              <el-button @click="bodyDialogVisible = false" style="display: flex">Close</el-button>
+            </el-dialog>
             <h4 style="text-align: left;margin: 0">Access Token</h4>
             <el-input v-model="s3CurrentToken" placeholder="access_token"/>
             <el-button type="primary" @click="handleRequestAPI" class="t-button">
@@ -260,12 +406,13 @@ onMounted(() => {
         <el-divider content-position="left" direction="horizontal" class="http-info-type">
           <span>RESPONSE INFO</span>
         </el-divider>
-        <div class="http-content" style="text-align: start;padding: 0em;position: relative;">
+        <div class="http-content" style="text-align: start; padding: 0em; position: relative; overflow: auto; max-height: 300px; width: 100%">
           <el-scrollbar class="http-render">
             <highlightjs autodetect :code="responseInfo.strHeader"/>
-            <highlightjs :class="{ 'bodyWrap': isWrapRes }" autodetect :code="responseInfo.body"/>
+            <highlightjs v-if="isJsonResponse(responseInfo.header)" autodetect :code="formatJson(responseInfo.body)"/>
+            <highlightjs v-else autodetect :code="responseInfo.body"></highlightjs>
           </el-scrollbar>
-          <el-checkbox style="position: absolute;bottom: 30px;left: 20px;" v-model="isWrapRes" label="Wrap Lines"
+          <el-checkbox v-model="isWrapRes" label="Wrap Lines"
                        size="large"/>
         </div>
       </div>
@@ -356,6 +503,16 @@ onMounted(() => {
     .t-button:hover {
       color: #fff;
       background-color: rgba(213, 22, 79, 1);
+    }
+
+    .user-button {
+      color: black;
+      background-color: rgba(128, 128, 128, 0.2);
+      width: 140px;
+    }
+    .user-button:hover {
+      color: black;
+      background-color: rgba(128, 128, 128, 0.4);
     }
 
     .n-button {
