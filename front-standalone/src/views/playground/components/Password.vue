@@ -231,7 +231,7 @@ function formatJson(jsonStr) {
     return resStr;
   } catch (error) {
     // 解析失败，返回原始内容
-    console.log('格式化json失败');
+    console.error('格式化json失败');
     return jsonStr;
   }
 }

@@ -153,7 +153,7 @@ async function handleGetToken() {
     fetchACToken(dataObject).then(({code, msg, data}) => {
       if(code === 0){
         const {request, response, rawjson, example} = data;
-        const {access_token, refresh_token} = rawjson || {};;
+        const {access_token, refresh_token} = rawjson || {};
         currentToken.value = access_token??"Uncertain";
         currentRefreshToken.value = refresh_token??"Uncertain";
         s3CurrentToken.value = access_token??"Uncertain";
@@ -311,11 +311,10 @@ function formatJson(jsonStr) {
   // 格式化 JSON 内容
   try {
     let resStr = JSON.stringify(JSON.parse(jsonStr), null, '  ');
-    // console.log(resStr);
     return resStr;
   } catch (error) {
     // 解析失败，返回原始内容
-    console.log('格式化json失败');
+    console.error('格式化json失败');
     return jsonStr;
   }
 }

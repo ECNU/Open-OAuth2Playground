@@ -19,6 +19,7 @@ func Routes(r *gin.Engine) {
 	playground := r.Group(g.Config().Http.RouteBase + "v1")
 	playground.Use(IPLimitCheck)
 	playground.Use(NoCache())
+	playground.POST("/oauth2/device_flow", deviceFlow)
 	playground.POST("/oauth2/client_credentials", clientCredentials)
 	playground.POST("/oauth2/password", passwordMode)
 	playground.POST("/oauth2/authorization_code", exchangeTokenByCode)

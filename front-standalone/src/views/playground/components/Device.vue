@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref, watch } from 'vue'
 import {ElMessage, FormInstance} from 'element-plus'
+import { LocalStorageService } from "/@/utils/persistence"
 import useClipboard from 'vue-clipboard3';
-import { fetchACTokenByClient, fetchApiData } from "/@/api/playground";
+import { fetchACTokenByDevice, fetchApiData, fetchRefreshToken} from "/@/api/playground";
+import * as QRCode from 'qrcode'
+import axios from "axios";
 
 const props = defineProps({
   cfgData: {
@@ -54,7 +57,7 @@ const responseInfo = reactive({
 });
 const rawJsonInfo = reactive({});
 const exampleInfo = reactive({});
-const isWrapRes = ref(true);//控制body是否自动换行
+const isWrapRes = ref(true);
 
 function updateReqAndRes() {
   requestInfo.body = atob(requestInfo.body);
@@ -79,26 +82,90 @@ function updateReqAndRes() {
 
 // Step 1
 const activeName = ref('1');
-const currentToken = ref("");
+const s1Data = reactive({
+  authorization_endpoint: "",
+  // redirect_uri: window.location.href.split("?")[0],
+  scope: "",
+  response_type: "device_code",
+  // state: "",
+});
 
-async function handleGetTokenByClient() {
-  if(props.cfgData.client_id.length === 0){
-    ElMessage.error('client_id cannot be empty');
+const initialAddress = ref("");
+
+// 修改的同时拼接成url显示在Grant Url中
+function handleS1Change() {
+  initialAddress.value = s1Data.authorization_endpoint.concat(
+      "?response_type=device_code",
+      s1Data.scope?.length > 0 ? "&scope=".concat(s1Data.scope) : "",
+      props.cfgData.client_id?.length > 0 ? "&client_id=".concat(props.cfgData.client_id) : ""
+  );
+}
+
+function handleDeviceFlow() {
+  if (s1Data.scope.length === 0) {
+    ElMessage.error('scope cannot be empty');
     return;
-  }else if(props.cfgData.client_secret.length === 0){
-    ElMessage.error('client_secret cannot be empty');
-    return;
-  }else{
-    const dataObject = {
-      client_id: props.cfgData.client_id,
-      client_secret: props.cfgData.client_secret
-    };
-    fetchACTokenByClient(dataObject).then(({code, msg, data}) => {
-      if(code === 0){
-        const {request, response, rawjson, example} = data;
-        const {access_token} = rawjson || {};
-        currentToken.value = access_token??"Uncertain";
-        s3CurrentToken.value = access_token??"Uncertain";
+  } else {
+    if (props.cfgData.client_id.length === 0) {
+      ElMessage.error('client_id is empty, please click the config button on the right side, and check the configuration');
+      return;
+    } else {
+      const lss = new LocalStorageService();
+      const ci = {key: "id", value: props.cfgData.client_id};
+      const cs = {key: "secret", value: props.cfgData.client_secret};
+      lss.addItem(ci);
+      if(cs.value.length > 0){
+        lss.addItem(cs);
+      }
+      // window.location.href = initialAddress.value;
+      axios.post(initialAddress.value).then((res) => {
+        user_code.value = res.data.user_code
+        verification_uri.value = res.data.verification_uri
+        device_code.value = res.data.device_code
+        expires_in.value = res.data.expires_in
+        // 检查是否获取到user_code,若长度不为0，则跳到Step 2
+        if (device_code.value.length === 0 || user_code.value.length === 0 || verification_uri.value.length === 0) {
+          ElMessage.error("Authorization failed. Check your configurations.");
+          return;
+        }
+        activeName.value = '2';
+        // 轮询是否获取到token
+        tokenAvailablelong(expires_in.value);
+      }).catch((err) => {
+        console.error('get user code failed: ', err)
+      })
+    }
+  }
+}
+
+// Step 2
+const currentToken = ref("");
+const currentRefreshToken = ref("");
+const verification_uri = ref("");
+const user_code = ref("");
+const device_code = ref("");
+const expires_in = ref("");
+const interval = ref("");
+
+const timerId = ref(null);
+const qrCodeSrc = ref("");
+
+// 长轮询
+function tokenAvailablelong(expire) {
+  const dataObject = {
+    client_id: props.cfgData.client_id,
+    code: device_code.value,
+    response_type: "device_code",
+    expires_in: expire
+  };
+  fetchACTokenByDevice(dataObject).then(({code, msg, data}) => {
+    if (code === 0) {
+      const {request, response, rawjson, example} = data;
+      const {access_token, refresh_token} = rawjson || {};
+      if (access_token !== undefined && access_token !== null) {
+        currentToken.value = access_token;
+        currentRefreshToken.value = refresh_token;
+        s3CurrentToken.value = access_token;
         toClipboard(access_token).finally(() => {
           ElMessage.success(`get access_token success: ${access_token}`);
         });
@@ -106,17 +173,71 @@ async function handleGetTokenByClient() {
         Object.assign(responseInfo, response);
         Object.assign(rawJsonInfo, rawjson);
         Object.assign(exampleInfo, example);
-
         window.history.replaceState({}, document.title, window.location.pathname);
+        updateReqAndRes();
+      } else {
+        ElMessage.error("Get token failed. Please refresh the user code!");
+        resetData();
+      }
+    } else if (code === -1) {
+      ElMessage.error('Authorization timeout. Please refresh the user code!')
+      resetData();
+    }
+  }).catch((error) => {
+    console.error('Error checking token:', error);
+  })
+}
+
+function resetData() {
+  verification_uri.value = "";
+  user_code.value = "";
+  device_code.value = "";
+  expires_in.value = "";
+  interval.value = "";
+  currentToken.value = "";
+  currentRefreshToken.value = "";
+}
+
+function handleRefreshToken() {
+  if(props.cfgData.client_id.length === 0){
+    ElMessage.error('client_id is empty, please click the config button on the right side, and check the configuration');
+    return;
+  }
+  else if(props.cfgData.client_secret.length === 0){
+    ElMessage.error('client_secret is empty, please click the config button on the right side, and check the configuration');
+    return;
+  }else if(currentRefreshToken.value.length === 0){
+    ElMessage.error('refresh_token is empty, please get the access_token firstly');
+    return;
+  }else{
+    const dataObject = {
+      refresh_token: currentRefreshToken.value,
+      client_id: props.cfgData.client_id,
+      client_secret: props.cfgData.client_secret
+    };
+
+    fetchRefreshToken(dataObject).then(({code, msg, data}) => {
+      if(code === 0){
+        const {request, response, rawjson, example} = data;
+        const {access_token, refresh_token} = rawjson || {};
+        currentToken.value = access_token??"Uncertain";
+        currentRefreshToken.value = refresh_token??"Uncertain";
+        s3CurrentToken.value = access_token??"Uncertain";
+        toClipboard(access_token).finally(() => {
+          ElMessage.success(`refresh access_token success: ${access_token}`);
+        });
+        Object.assign(requestInfo, request);
+        Object.assign(responseInfo, response);
+        Object.assign(rawJsonInfo, rawjson);
+        Object.assign(exampleInfo, example);
         updateReqAndRes();
       }else{
         ElMessage.error(msg);
+        return;
       }
     });
-
   }
 }
-
 
 // Step 3
 const requestUri = ref("");
@@ -137,6 +258,7 @@ const headerRules = reactive({
 });
 const additionalHeaders = reactive([]);
 const additionalBody = ref("")
+
 const methodOptions = [
   {label: 'GET', value: 'GET', disabled: false},
   {label: 'POST', value: 'POST', disabled: false},
@@ -152,12 +274,12 @@ const contentTypeOptions = [
   {label: 'application/atom+xml', value: 'application/atom+xml', disabled: true},
   {label: 'text/plain', value: 'text/plain', disabled: true},
   {label: 'text/csv', value: 'text/csv', disabled: true},
-  // {label: 'Custom', value: 'Custom', disabled: true}, // TODO：参考google，跳出添加header的dialog，header name = “Content-Type”,value由用户填
+  // {label: 'Custom', value: 'Custom', disabled: true}, // TODO：参考google playground
 ]
 
 function handleMethodChange(value) {
   requestMethod.value = value;
-  ElMessage.info(`当前请求方法: ${requestMethod.value}`);
+  ElMessage.info(`当前请求方法: ${value}`);
 }
 
 function handleContentTypeChange(value) {
@@ -213,7 +335,6 @@ function formatJson(jsonStr) {
   // 格式化 JSON 内容
   try {
     let resStr = JSON.stringify(JSON.parse(jsonStr), null, '  ');
-    // console.log(resStr);
     return resStr;
   } catch (error) {
     // 解析失败，返回原始内容
@@ -221,7 +342,6 @@ function formatJson(jsonStr) {
     return jsonStr;
   }
 }
-
 async function addHeader(headerForm) {
   if (!headerForm)
     return;
@@ -241,9 +361,32 @@ function deleteRow(index) {
   additionalHeaders.splice(index, 1)
 }
 
+async function generateQRCode(url) {
+  try {
+    qrCodeSrc.value = await QRCode.toDataURL(url);
+    console.log()
+  } catch (err) {
+    console.error('Failed to generate QR code: ', err)
+  }
+}
+
 watch(props.cfgData, (newValue) => {
+  s1Data.authorization_endpoint = newValue.authorization_endpoint;
+  s1Data.scope = newValue.default_scope;
+  initialAddress.value = newValue.authorization_endpoint.concat(
+      "?response_type=device_code",
+      newValue.default_scope?.length > 0 ? "&scope=".concat(newValue.default_scope) : "",
+      newValue.client_id?.length > 0 ? "&client_id=".concat(newValue.client_id) : "",
+      // "&redirect_uri=",
+      // s1Data.redirect_uri,
+      // s1Data.state?.length > 0 ? "&state=".concat(s1Data.state) : ""
+  );
   requestUri.value = newValue.userinfo_endpoint;
   s3TokenType.value = newValue.access_token_type;
+});
+
+watch(verification_uri, (newValue) => {
+  generateQRCode(newValue);
 });
 
 onMounted(() => {
@@ -251,8 +394,18 @@ onMounted(() => {
   s3TokenType.value = props.cfgData.access_token_type;
   additionalHeaders.length = 0;
   additionalBody.value = '';
+
+  if (verification_uri.value.length != 0) {
+    generateQRCode(verification_uri.value);
+  }
 });
 
+
+const agS1ContainerRef = ref(null);
+const agS1Ref = ref(null);
+const handleDrag = (floatButton, container) => {
+  // todo: drag float button
+};
 
 </script>
 <template>
@@ -261,29 +414,72 @@ onMounted(() => {
       <el-collapse v-model="activeName" accordion>
         <el-collapse-item class="el-collapse-item" name="1">
           <template #title>
-            <span class="stepTitle">Step 1: Fetch token with Client Credentials</span>
+            <span class="stepTitle">Step 1: Request for Device Flow Authorization</span>
+          </template>
+          <el-scrollbar class="fitSide" ref="agS1ContainerRef">
+            <h4 style="text-align: left;margin: 0">Authorization Endpoint</h4>
+            <el-input v-model="s1Data.authorization_endpoint" disabled/>
+<!--            <h4 style="text-align: left;margin: 0">Redirect Uri</h4>-->
+<!--            <el-input v-model="s1Data.redirect_uri" disabled/>-->
+            <h4 style="text-align: left;margin: 0">Scope</h4>
+            <el-input v-model="s1Data.scope" placeholder="Scope" @input="handleS1Change" @blur="handleS1Change"/>
+            <h4 style="text-align: left;margin: 0">Response Type</h4>
+            <el-input v-model="s1Data.response_type" placeholder="Response Type" disabled/>
+            <h4 style="text-align: left;margin: 0">Grant Url</h4>
+            <el-input v-model="initialAddress" type="textarea" :autosize="{ minRows: 4, maxRows: 6 }"
+                      placeholder="Request grant code address"/>
+            <el-button ref="agS1Ref" type="primary" @click="handleDeviceFlow" class="n-button side-button">
+              GO
+            </el-button>
+          </el-scrollbar>
+        </el-collapse-item>
+        <el-collapse-item class="el-collapse-item" name="2">
+          <template #title>
+            <span class="stepTitle">Step 2: Fetch token with Device Flow</span>
           </template>
           <el-scrollbar class="fitSide">
-            <el-button type="primary" @click="handleGetTokenByClient" class="t-button">
-              Get Token
-            </el-button>
-
+            <h4 style="text-align: left;margin: 0">User Code</h4>
+            <span style="display: flex">The user code will expire in 5 minutes</span>
+            <el-input v-model="user_code" placeholder="User Code">
+              <template #append>
+                <el-button type="primary" @click="handleDeviceFlow" class="t-button">
+                  <span style="margin-left: -10px">Fresh User Code</span>
+                </el-button>
+              </template>
+            </el-input>
+            <h4 style="text-align: left;margin: 0; margin-top: 5px">Verification Uri</h4>
+            <span style="display: flex">Go to the following link or scan the QR code,then enter the user code above</span>
+            <el-input v-model="verification_uri" placeholder="Verification Uri" />
+            <div>
+              <img :src="qrCodeSrc" v-if="qrCodeSrc != ''" alt="QR Code" />
+            </div>
+            <h4 style="text-align: left;margin: 0">Refresh Token</h4>
+            <el-input v-model="currentRefreshToken" placeholder="Refresh Token">
+              <template #append>
+                <el-button type="primary" @click="handleRefreshToken" class="t-button">
+                  Refresh Token
+                </el-button>
+              </template>
+            </el-input>
             <h4 style="text-align: left;margin: 0">Current Access Token</h4>
-            <div class="tokenArea">
+            <div v-if="currentToken" class="tokenArea">
               <strong><code>{{ currentToken }}</code></strong>
+            </div>
+            <div v-else class="tokenArea">
+              <strong><code>Waiting for authorization...</code></strong>
             </div>
           </el-scrollbar>
         </el-collapse-item>
         <el-collapse-item class="el-collapse-item" name="3">
           <template #title>
-            <span class="stepTitle">Step 2: Request to API with the <code
+            <span class="stepTitle">Step 3: Request to API with the <code
                 style="color:#cd3221">access_token</code></span>
           </template>
           <el-scrollbar class="fitSide">
             <h4 style="text-align: left;margin: 0">Request URI</h4>
             <el-input v-model="requestUri" placeholder="Authorization Code"/>
             <h4 style="text-align: left;margin: 0">Method</h4>
-            <el-select v-model="requestMethod" @change="handleMethodChange" >
+            <el-select v-model="requestMethod" @change="handleMethodChange">
               <el-option v-for="item in methodOptions" :key="item.label" :label="item.label" :value="item.value"
                          :disabled="item.disabled"/>
             </el-select>
@@ -310,7 +506,7 @@ onMounted(() => {
             <!-- header Dialog-->
             <el-dialog v-model="headerDialogVisible" title="Headers">
               <div>
-<!--                <h4 style="display: flex">Add a header:</h4>-->
+                <!--                <h4 style="display: flex">Add a header:</h4>-->
                 <el-form ref="headerFormRef" :inline="true" :model="newHeader" :rules="headerRules" style="display: flex">
                   <el-form-item prop="name" style="width: 280px">
                     <el-input v-model="newHeader.name" placeholder="header name"></el-input>
@@ -382,18 +578,17 @@ onMounted(() => {
             <highlightjs autodetect :code="requestInfo.code"/>
             <highlightjs :class="{ 'bodyWrap': isWrapRes }" autodetect :code="requestInfo.body"/>
           </el-scrollbar>
-       <!--   <el-checkbox style="position: absolute;bottom: 30px;left: 20px;" v-model="isWrapReq" label="Wrap Lines"
-                       size="large"/> -->
+          <!--   <el-checkbox style="position: absolute;bottom: 30px;left: 20px;" v-model="isWrapReq" label="Wrap Lines"
+                          size="large"/> -->
         </div>
       </div>
       <div class="http-right">
         <el-divider content-position="left" direction="horizontal" class="http-info-type">
           <span>RESPONSE INFO</span>
         </el-divider>
-        <div class="http-content" style="text-align: start; padding: 0em; position: relative; overflow: auto; max-height: 350px; width: 100%">
+        <div class="http-content" style="text-align: start; padding: 0em; position: relative; overflow: auto; max-height: 300px; width: 100%">
           <el-scrollbar class="http-render">
             <highlightjs autodetect :code="responseInfo.strHeader"/>
-            <!-- TODO: json区增加复制-->
             <highlightjs v-if="isJsonResponse(responseInfo.header)" autodetect :code="formatJson(responseInfo.body)"/>
             <highlightjs v-else autodetect :code="responseInfo.body"></highlightjs>
           </el-scrollbar>
@@ -499,6 +694,7 @@ onMounted(() => {
       color: black;
       background-color: rgba(128, 128, 128, 0.4);
     }
+
 
     .n-button {
       background-color: rgba(183, 0, 49, 0.14);

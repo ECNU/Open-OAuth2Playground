@@ -7,12 +7,14 @@ import { fetchConfig } from '/@/api/common'
 import { Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { LocalStorageService } from "/@/utils/persistence"
+import Device from "/@/views/playground/components/Device.vue";
+import store from "/@/store/index"
 
 defineOptions({
   name: "Playground"
 });
 
-const grantTypes = ref("1");
+const grantTypes = ref(store.state.grantTypes)
 const configData = reactive({
   trust_domain: [],
   authorization_endpoint: "",
@@ -48,12 +50,18 @@ function handleSaveAccount() {
   ElMessage.success(configData.client_id);
 }
 
+function changeGrantType(newV) {
+  grantTypes.value = newV;
+  store.commit('setGrantTypes', newV);
+}
+
 const computedPopWidth = computed(() => {
   return window.innerWidth < 640 ? "100%" : "60%";
 });
 
 onMounted(() => {
   getGlobalConfig();
+  grantTypes.value = store.state.grantTypes
 })
 </script>
 
@@ -66,10 +74,11 @@ onMounted(() => {
             <span class="bigTitle">OAuth 2.0 Playground</span>
           </el-col>
           <el-col :xs="20" :sm="22" :md="14" :lg="14" :xl="14" class="contentRow">
-            <el-radio-group v-model="grantTypes" size="small">
+            <el-radio-group v-model="grantTypes" size="small" @change="changeGrantType">
               <el-radio-button label="1">Authorization Code</el-radio-button>
               <el-radio-button label="2">Resource Owner Password Credentials</el-radio-button>
               <el-radio-button label="3">Client Credentials</el-radio-button>
+              <el-radio-button label="4">Device Flow</el-radio-button>
             </el-radio-group>
           </el-col>
           <el-col :xs="4" :sm="2" :md="2" :lg="2" :xl="2" class="contentRow">
@@ -77,6 +86,7 @@ onMounted(() => {
               <el-popover placement="bottom" trigger="click" :width="computedPopWidth">
                 <template #reference>
                   <el-button style="vertical-align: middle;">
+                    <span style="margin-right: 8px">Configuration Settings</span>
                     <el-icon>
                       <Setting/>
                     </el-icon>
@@ -136,6 +146,9 @@ onMounted(() => {
         </el-row>
         <el-row v-show="grantTypes==='3'" class="contentBox">
           <Client :cfgData="configData"></Client>
+        </el-row>
+        <el-row v-show="grantTypes==='4'" class="contentBox">
+          <Device :cfgData="configData"></Device>
         </el-row>
       </div>
     </div>
