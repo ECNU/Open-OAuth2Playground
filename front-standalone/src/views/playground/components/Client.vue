@@ -96,7 +96,7 @@ async function handleGetTokenByClient() {
     fetchACTokenByClient(dataObject).then(({code, msg, data}) => {
       if(code === 0){
         const {request, response, rawjson, example} = data;
-        const {access_token} = rawjson;
+        const {access_token} = rawjson || {};
         currentToken.value = access_token??"Uncertain";
         s3CurrentToken.value = access_token??"Uncertain";
         toClipboard(access_token).finally(() => {
