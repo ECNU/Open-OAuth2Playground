@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/ECNU/Open-OAuth2Playground/g"
@@ -20,7 +21,7 @@ type ExchangeTokenByCodeRequest struct {
 
 type RefreshTokenRequest struct {
 	ClientID     string `json:"client_id"`
-	ClientSecret string `json:"client_secret"`
+	ClientSecret string `json:"client_secret,omitempty"` // client_secret is optional for refresh_token
 	RefreshToken string `json:"refresh_token"`
 }
 
@@ -58,7 +59,11 @@ func refreshToken(c *gin.Context) {
 	method := "POST"
 	apiAddr := g.Config().Endpoints.Token
 	grant_type := "refresh_token"
-	body := fmt.Sprintf("grant_type=%s&client_id=%s&client_secret=%s&refresh_token=%s", grant_type, request.ClientID, request.ClientSecret, request.RefreshToken)
+	body := fmt.Sprintf("grant_type=%s&client_id=%s&refresh_token=%s", grant_type, request.ClientID, request.RefreshToken)
+
+	if request.ClientSecret != "" {
+		body += fmt.Sprintf("&client_secret=%s", url.QueryEscape(request.ClientSecret))
+	}
 
 	header := make(map[string]string)
 	header["Content-Type"] = "application/x-www-form-urlencoded"

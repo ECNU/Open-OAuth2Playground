@@ -8,6 +8,7 @@ import { Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { LocalStorageService } from "/@/utils/persistence"
 import Device from "/@/views/playground/components/Device.vue";
+import PKCE from "/@/views/playground/components/PKCE.vue";
 import store from "/@/store/index"
 
 defineOptions({
@@ -79,6 +80,7 @@ onMounted(() => {
               <el-radio-button label="2">Resource Owner Password Credentials</el-radio-button>
               <el-radio-button label="3">Client Credentials</el-radio-button>
               <el-radio-button label="4">Device Flow</el-radio-button>
+              <el-radio-button label="5">PKCE</el-radio-button>
             </el-radio-group>
           </el-col>
           <el-col :xs="4" :sm="2" :md="2" :lg="2" :xl="2" class="contentRow">
@@ -149,6 +151,9 @@ onMounted(() => {
         </el-row>
         <el-row v-show="grantTypes==='4'" class="contentBox">
           <Device :cfgData="configData"></Device>
+        </el-row>
+        <el-row v-show="grantTypes==='5'" class="contentBox">
+          <PKCE :cfgData="configData"></PKCE>
         </el-row>
       </div>
     </div>

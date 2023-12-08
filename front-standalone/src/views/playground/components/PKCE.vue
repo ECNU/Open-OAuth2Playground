@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref, watch } from 'vue'
+import {onMounted, reactive, ref, toRefs, watch} from 'vue'
 import {ElMessage, FormInstance} from 'element-plus'
-import { generateRandomString } from "/@/utils/x";
 import { LocalStorageService } from "/@/utils/persistence"
 import useClipboard from 'vue-clipboard3';
-import { fetchACToken, fetchApiData, fetchRefreshToken } from "/@/api/playground";
+import {fetchACTokenByPkce, fetchApiData, fetchRefreshToken} from "/@/api/playground";
+import CryptoJS from 'crypto-js'
+import { generateRandomString } from "/@/utils/x";
 
 const props = defineProps({
   cfgData: {
@@ -56,7 +57,7 @@ const responseInfo = reactive({
 });
 const rawJsonInfo = reactive({});
 const exampleInfo = reactive({});
-const isWrapRes = ref(true);//控制body是否自动换行
+const isWrapRes = ref(true);
 
 function updateReqAndRes() {
   requestInfo.body = atob(requestInfo.body);
@@ -86,23 +87,87 @@ const s1Data = reactive({
   redirect_uri: window.location.href.split("?")[0],
   scope: "",
   response_type: "code",
+  code_verifier: "",
+  code_challenge: "",
   state: "",
 });
 
 const initialAddress = ref("");
 
+// 修改的同时拼接成url显示在Grant Url中
 function handleS1Change() {
   initialAddress.value = s1Data.authorization_endpoint.concat(
       "?response_type=code",
       s1Data.scope?.length > 0 ? "&scope=".concat(s1Data.scope) : "",
       props.cfgData.client_id?.length > 0 ? "&client_id=".concat(props.cfgData.client_id) : "",
-      "&redirect_uri=",
-      s1Data.redirect_uri,
-      s1Data.state?.length > 0 ? "&state=".concat(s1Data.state) : ""
+      "&redirect_uri=", s1Data.redirect_uri,
+      s1Data.state?.length > 0 ? "&state=".concat(s1Data.state) : "",
+      s1Data.code_challenge.length > 0 ? "&code_challenge=".concat(s1Data.code_challenge) : "",
+      "&code_challenge_method=S256"
   );
 }
 
-function handleGetAuthorizationCode() {
+function handleCodeVerifierChange() {
+  // 验证s1Data.code_verifier字符串是否满足以下条件：
+  // 1.字符在A-Za-z范围内
+  // 2.长度为32
+  const isLengthValid = s1Data.code_verifier.length === 32;
+  const isCharacterValid = /^[A-Za-z0-9]+$/.test(s1Data.code_verifier);
+
+  if (!isLengthValid) {
+    ElMessage.error(`Code verifier's length must be 32 characters.Current length: ${s1Data.code_verifier.length}`);
+    s1Data.code_challenge = "";
+  } else if (!isCharacterValid) {
+    ElMessage.error(`Code verifier must contain only alphanumeric characters`);
+    s1Data.code_challenge = "";
+  } else {
+    // code_verifier changes
+    localStorage.setItem('code_verifier', s1Data.code_verifier)
+    s1Data.code_challenge = generateCodeChallenge(s1Data.code_verifier);
+  }
+}
+
+// 生成code_verify
+function generateCodeverify() {
+  return generateRandomStringByLength(32);
+}
+
+function handleRefreshCodeVerifier() {
+  s1Data.code_verifier = generateCodeverify();
+  localStorage.setItem('code_verifier', s1Data.code_verifier)
+  s1Data.code_challenge = generateCodeChallenge(s1Data.code_verifier);
+}
+
+// 生成 code_hallenge
+function generateCodeChallenge(code_verifier: string) {
+  return base64URL(CryptoJS.SHA256(code_verifier))
+}
+
+// 生成随机字符串
+function generateRandomStringByLength(length) {
+  let text = ''
+  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  for (let i = 0; i < length; i++) {
+    text += possible.charAt(Math.floor(Math.random() * possible.length))
+  }
+  return text
+}
+
+// 将字符串base64url编码
+function base64URL(str: CryptoJS.lib.WordArray) {
+  return str
+      .toString(CryptoJS.enc.Base64)
+      .replace(/=/g, '')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+}
+
+// 将字符串加密为Base64格式
+// function base64Str(str: string) {
+//   return CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(str));
+// }
+
+function getAuthorizationCode() {
   if(s1Data.scope.length === 0){
     ElMessage.error('scope cannot be empty');
     return;
@@ -116,11 +181,11 @@ function handleGetAuthorizationCode() {
     }else{
       const lss = new LocalStorageService();
       const ci = {key: "id", value: props.cfgData.client_id};
-      const cs = {key: "secret", value: props.cfgData.client_secret};
+      // const cs = {key: "secret", value: props.cfgData.client_secret};
       lss.addItem(ci);
-      if(cs.value.length > 0){
-        lss.addItem(cs);
-      }
+      // if(cs.value.length > 0){
+      //   lss.addItem(cs);
+      // }
       window.location.href = initialAddress.value;
     }
   }
@@ -129,6 +194,8 @@ function handleGetAuthorizationCode() {
 // Step 2
 const code = ref("");
 const state = ref("");
+const code_verifier = ref("");
+// const code_challenge = ref(s1Data.code_challenge);
 const currentToken = ref("");
 const currentRefreshToken = ref("");
 
@@ -139,74 +206,100 @@ async function handleGetToken() {
   }else if(props.cfgData.client_id.length === 0){
     ElMessage.error('client_id cannot be empty');
     return;
-  }else if(props.cfgData.client_secret.length === 0){
-    ElMessage.error('client_secret cannot be empty');
-    return;
-  }else{
+  }
+  // else if(props.cfgData.client_secret.length === 0){
+  //   ElMessage.error('client_secret cannot be empty');
+  //   return;
+  // }
+  else{
+    code_verifier.value = s1Data.code_verifier
     const dataObject = {
       code: code.value,
       client_id: props.cfgData.client_id,
-      client_secret: props.cfgData.client_secret,
+      // client_secret: props.cfgData.client_secret,
+      code_verifier: code_verifier.value,
       scope: props.cfgData.default_scope,
-      redirect_uri: window.location.href.split("?")[0]
+      redirect_uri: window.location.href.split("?")[0],
     };
-    fetchACToken(dataObject).then(({code, msg, data}) => {
+    fetchACTokenByPkce(dataObject).then(({code, msg, data}) => {
       if(code === 0){
         const {request, response, rawjson, example} = data;
         const {access_token, refresh_token} = rawjson || {};
-        currentToken.value = access_token??"Uncertain";
-        currentRefreshToken.value = refresh_token??"Uncertain";
-        s3CurrentToken.value = access_token??"Uncertain";
-        toClipboard(access_token).finally(() => {
-          ElMessage.success(`get access_token success: ${access_token}`);
-        });
-        Object.assign(requestInfo, request);
-        Object.assign(responseInfo, response);
-        Object.assign(rawJsonInfo, rawjson);
-        Object.assign(exampleInfo, example);
-
-        window.history.replaceState({}, document.title, window.location.pathname);
-        updateReqAndRes();
+        if (access_token !== undefined && access_token !== null) {
+          currentToken.value = access_token;
+          currentRefreshToken.value = refresh_token;
+          s3CurrentToken.value = access_token;
+          toClipboard(access_token).finally(() => {
+            ElMessage.success(`get access_token success: ${access_token}`);
+          });
+          Object.assign(requestInfo, request);
+          Object.assign(responseInfo, response);
+          Object.assign(rawJsonInfo, rawjson);
+          Object.assign(exampleInfo, example);
+          window.history.replaceState({}, document.title, window.location.pathname);
+          updateReqAndRes();
+        } else {
+          ElMessage.error("Get token failed. Please go back to Step 1 to refresh the code verifier!");
+          resetData()
+        }
       }else{
         ElMessage.error(msg);
       }
     });
-
   }
+}
+
+function resetData() {
+  currentToken.value = "";
+  currentRefreshToken.value = "";
+  s3CurrentToken.value = '';
+  code.value = '';
+  state.value = '';
+  s1Data.code_verifier = '';
+  code_verifier.value = '';
+  localStorage.setItem('code_verifier', '');
+  console.log('清空后的值： ' + localStorage.getItem('code_verifier'))
+  s1Data.code_challenge = '';
 }
 
 function handleRefreshToken() {
   if(props.cfgData.client_id.length === 0){
     ElMessage.error('client_id is empty, please click the config button on the right side, and check the configuration');
     return;
-  }else if(props.cfgData.client_secret.length === 0){
-    ElMessage.error('client_secret is empty, please click the config button on the right side, and check the configuration');
-    return;
-  }else if(currentRefreshToken.value.length === 0){
+  }
+  // else if(props.cfgData.client_secret.length === 0){
+  //   ElMessage.error('client_secret, please click the config button on the right side, and check the configuration');
+  //   return;
+  // }
+  else if(currentRefreshToken.value.length === 0){
     ElMessage.error('refresh_token is empty, please get the access_token firstly');
     return;
   }else{
     const dataObject = {
       refresh_token: currentRefreshToken.value,
       client_id: props.cfgData.client_id,
-      client_secret: props.cfgData.client_secret
+      // client_secret: props.cfgData.client_secret
     };
-
     fetchRefreshToken(dataObject).then(({code, msg, data}) => {
       if(code === 0){
         const {request, response, rawjson, example} = data;
         const {access_token, refresh_token} = rawjson || {};
-        currentToken.value = access_token??"Uncertain";
-        currentRefreshToken.value = refresh_token??"Uncertain";
-        s3CurrentToken.value = access_token??"Uncertain";
-        toClipboard(access_token).finally(() => {
-          ElMessage.success(`refresh access_token success: ${access_token}`);
-        });
-        Object.assign(requestInfo, request);
-        Object.assign(responseInfo, response);
-        Object.assign(rawJsonInfo, rawjson);
-        Object.assign(exampleInfo, example);
-        updateReqAndRes();
+        if (access_token !== undefined && access_token !== null) {
+          currentToken.value = access_token;
+          currentRefreshToken.value = refresh_token;
+          s3CurrentToken.value = access_token;
+          toClipboard(access_token).finally(() => {
+            ElMessage.success(`get access_token success: ${access_token}`);
+          });
+          Object.assign(requestInfo, request);
+          Object.assign(responseInfo, response);
+          Object.assign(rawJsonInfo, rawjson);
+          Object.assign(exampleInfo, example);
+          window.history.replaceState({}, document.title, window.location.pathname);
+          updateReqAndRes();
+        } else {
+          ElMessage.error("Refresh token failed. Please retry");
+        }
       }else{
         ElMessage.error(msg);
         return;
@@ -318,7 +411,6 @@ function formatJson(jsonStr) {
     return jsonStr;
   }
 }
-
 async function addHeader(headerForm) {
   if (!headerForm)
     return;
@@ -345,16 +437,28 @@ watch(props.cfgData, (newValue) => {
       "?response_type=code",
       newValue.default_scope?.length > 0 ? "&scope=".concat(newValue.default_scope) : "",
       newValue.client_id?.length > 0 ? "&client_id=".concat(newValue.client_id) : "",
-      "&redirect_uri=",
-      s1Data.redirect_uri,
-      s1Data.state?.length > 0 ? "&state=".concat(s1Data.state) : ""
+      "&redirect_uri=", s1Data.redirect_uri,
+      s1Data.state?.length > 0 ? "&state=".concat(s1Data.state) : "",
+      s1Data.code_challenge.length > 0 ? "&code_challenge=".concat(s1Data.code_challenge) : "",
+      "&code_challenge_method=S256"
   );
   requestUri.value = newValue.userinfo_endpoint;
   s3TokenType.value = newValue.access_token_type;
 });
 
+watch(toRefs(s1Data).code_challenge, (newValue) => {
+  handleS1Change();
+})
+
 onMounted(() => {
-  // handleDrag(agS1Ref.value.$el, agS1ContainerRef.value.$el);
+  // console.log('code_verifier:' + localStorage.getItem('code_verifier').length)
+  if (localStorage.getItem('code_verifier') === null || localStorage.getItem('code_verifier').length === 0) {
+    s1Data.code_verifier = generateCodeverify();
+    localStorage.setItem('code_verifier', s1Data.code_verifier)
+  } else {
+    s1Data.code_verifier = localStorage.getItem('code_verifier');
+  }
+  s1Data.code_challenge = generateCodeChallenge(s1Data.code_verifier);
   s1Data.state = generateRandomString(props.cfgData.default_scope);
 
   const urlParams = new URLSearchParams(window.location.search);
@@ -362,15 +466,13 @@ onMounted(() => {
     code.value = urlParams.get('code');
     state.value = urlParams.get('state');
     activeName.value = '2';
-    // window.history.replaceState({}, document.title, window.location.pathname);
   }
+
   requestUri.value = props.cfgData.userinfo_endpoint;
   s3TokenType.value = props.cfgData.access_token_type;
   additionalHeaders.length = 0;
   additionalBody.value = '';
-
 });
-
 
 const agS1ContainerRef = ref(null);
 const agS1Ref = ref(null);
@@ -385,7 +487,7 @@ const handleDrag = (floatButton, container) => {
       <el-collapse v-model="activeName" accordion>
         <el-collapse-item class="el-collapse-item" name="1">
           <template #title>
-            <span class="stepTitle">Step 1: Request for Authorization Code</span>
+            <span class="stepTitle">Step 1: Request for Device Flow Authorization</span>
           </template>
           <el-scrollbar class="fitSide" ref="agS1ContainerRef">
             <h4 style="text-align: left;margin: 0">Authorization Endpoint</h4>
@@ -398,10 +500,21 @@ const handleDrag = (floatButton, container) => {
             <el-input v-model="s1Data.response_type" placeholder="Response Type" disabled/>
             <h4 style="text-align: left;margin: 0">State</h4>
             <el-input v-model="s1Data.state" placeholder="State" @input="handleS1Change" @blur="handleS1Change"/>
+            <h4 style="text-align: left;margin: 0">Code Verifier</h4>
+            <span style="display: flex">A random string of 26 letters (case sensitive) with a length of 32 bits</span>
+            <el-input v-model="s1Data.code_verifier" placeholder="code verifier" @blur="handleCodeVerifierChange">
+              <template #append>
+                <el-button type="primary" @click="handleRefreshCodeVerifier" class="t-button">
+                  Refresh
+                </el-button>
+              </template>
+            </el-input>
+            <h4 style="text-align: left;margin: 0">Code Challenge</h4>
+            <el-input v-model="s1Data.code_challenge" placeholder="code challenge" :disabled="true" @input="handleS1Change" @blur="handleS1Change"/>
             <h4 style="text-align: left;margin: 0">Grant Url</h4>
             <el-input v-model="initialAddress" type="textarea" :autosize="{ minRows: 4, maxRows: 6 }"
                       placeholder="Request grant code address"/>
-            <el-button ref="agS1Ref" type="primary" @click="handleGetAuthorizationCode" class="n-button side-button">
+            <el-button ref="agS1Ref" type="primary" @click="getAuthorizationCode" class="n-button side-button">
               GO
             </el-button>
           </el-scrollbar>
@@ -535,13 +648,14 @@ const handleDrag = (floatButton, container) => {
         <el-divider content-position="left" direction="horizontal" class="http-info-type">
           <span>REQUEST INFO</span>
         </el-divider>
-        <div class="http-content" style="text-align: start; padding: 0em; position: relative; overflow: auto; max-height: 350px; width: 100%">
+        <div class="http-content" style="text-align: start;padding:0px;position: relative;">
+
           <el-scrollbar class="http-render">
             <highlightjs autodetect :code="requestInfo.code"/>
             <highlightjs :class="{ 'bodyWrap': isWrapRes }" autodetect :code="requestInfo.body"/>
           </el-scrollbar>
-          <el-checkbox v-model="isWrapRes" label="Wrap Lines"
-                       size="large"/>
+          <!--   <el-checkbox style="position: absolute;bottom: 30px;left: 20px;" v-model="isWrapReq" label="Wrap Lines"
+                          size="large"/> -->
         </div>
       </div>
       <div class="http-right">
@@ -656,6 +770,7 @@ const handleDrag = (floatButton, container) => {
       color: black;
       background-color: rgba(128, 128, 128, 0.4);
     }
+
 
     .n-button {
       background-color: rgba(183, 0, 49, 0.14);
