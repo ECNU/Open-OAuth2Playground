@@ -538,8 +538,7 @@ const handleDrag = (floatButton, container) => {
         <div class="http-content" style="text-align: start; padding: 0em; position: relative; overflow: auto; max-height: 350px; width: 100%">
           <el-scrollbar class="http-render">
             <highlightjs autodetect :code="requestInfo.code"/>
-            <highlightjs v-if="isJsonResponse(responseInfo.header)" autodetect :code="formatJson(responseInfo.body)"/>
-            <highlightjs v-else autodetect :code="responseInfo.body"></highlightjs>
+            <highlightjs :class="{ 'bodyWrap': isWrapRes }" autodetect :code="requestInfo.body"/>
           </el-scrollbar>
           <el-checkbox v-model="isWrapRes" label="Wrap Lines"
                        size="large"/>
