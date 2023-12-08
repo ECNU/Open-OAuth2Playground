@@ -46,3 +46,10 @@ export const fetchACTokenByPassword = (data) => {
 export const fetchACTokenByDevice = (data) => {
     return http.post<Result>("/oauth2/device_flow", data);
 };
+
+/** PKCE */
+/** Step 2 */
+/** Get access_token with PKCE */
+export const fetchACTokenByPkce = (data) => {
+    return http.post<Result>("/oauth2/pkce", data);
+};
