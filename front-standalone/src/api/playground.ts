@@ -41,6 +41,12 @@ export const fetchACTokenByPassword = (data) => {
 };
 
 /** Device Flow */
+/** Step 1 */
+/** Get user_code */
+export const fetchUserCode = (data) => {
+    return http.post<Result>("/oauth2/user_code", data);
+}
+
 /** Step 2 */
 /** Get access_token with device_code */
 export const fetchACTokenByDevice = (data) => {
