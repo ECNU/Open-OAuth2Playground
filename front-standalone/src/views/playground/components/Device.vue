@@ -83,7 +83,7 @@ function updateReqAndRes() {
 // Step 1
 const activeName = ref('1');
 const s1Data = reactive({
-  authorization_endpoint: "",
+  token_endpoint: "",
   // redirect_uri: window.location.href.split("?")[0],
   scope: "",
   response_type: "device_code",
@@ -94,7 +94,7 @@ const initialAddress = ref("");
 
 // 修改的同时拼接成url显示在Grant Url中
 function handleS1Change() {
-  initialAddress.value = s1Data.authorization_endpoint.concat(
+  initialAddress.value = s1Data.token_endpoint.concat(
       "?response_type=device_code",
       s1Data.scope?.length > 0 ? "&scope=".concat(s1Data.scope) : "",
       props.cfgData.client_id?.length > 0 ? "&client_id=".concat(props.cfgData.client_id) : ""
@@ -384,9 +384,9 @@ async function generateQRCode(url) {
 }
 
 watch(props.cfgData, (newValue) => {
-  s1Data.authorization_endpoint = newValue.authorization_endpoint;
+  s1Data.token_endpoint = newValue.token_endpoint;
   s1Data.scope = newValue.default_scope;
-  initialAddress.value = newValue.authorization_endpoint.concat(
+  initialAddress.value = newValue.token_endpoint.concat(
       "?response_type=device_code",
       newValue.default_scope?.length > 0 ? "&scope=".concat(newValue.default_scope) : "",
       newValue.client_id?.length > 0 ? "&client_id=".concat(newValue.client_id) : "",
@@ -431,7 +431,7 @@ const handleDrag = (floatButton, container) => {
           </template>
           <el-scrollbar class="fitSide" ref="agS1ContainerRef">
             <h4 style="text-align: left;margin: 0">accessToken Endpoint</h4>
-            <el-input v-model="s1Data.authorization_endpoint" disabled/>
+            <el-input v-model="s1Data.token_endpoint" disabled/>
 <!--            <h4 style="text-align: left;margin: 0">Redirect Uri</h4>-->
 <!--            <el-input v-model="s1Data.redirect_uri" disabled/>-->
             <h4 style="text-align: left;margin: 0">Scope</h4>
