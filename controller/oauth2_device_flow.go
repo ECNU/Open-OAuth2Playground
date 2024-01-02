@@ -17,6 +17,29 @@ type ReqDeviceData struct {
 	ExpiresIn    int    `json:"expires_in"`
 }
 
+type ReqUserCodeData struct {
+	InitialAddress string `json:"initialAddress"`
+}
+
+func getUserCode(c *gin.Context) {
+	reqData := ReqUserCodeData{}
+	if err := c.Bind(&reqData); err != nil {
+		c.JSON(http.StatusOK, handleError(err.Error()))
+		return
+	}
+	method := "POST"
+	apiAddr := reqData.InitialAddress
+	body := fmt.Sprintf("")
+	header := make(map[string]string)
+
+	res, err := models.HandleRequest(method, apiAddr, g.UserAgent, body, g.Config().Timeout, header)
+	if err != nil {
+		c.JSON(http.StatusOK, handleError(err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, handleSuccess(res))
+}
+
 func deviceFlow(c *gin.Context) {
 	reqData := ReqDeviceData{}
 	if err := c.Bind(&reqData); err != nil {

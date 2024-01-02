@@ -3,7 +3,7 @@ import { onMounted, reactive, ref, watch } from 'vue'
 import {ElMessage, FormInstance} from 'element-plus'
 import { LocalStorageService } from "/@/utils/persistence"
 import useClipboard from 'vue-clipboard3';
-import { fetchACTokenByDevice, fetchApiData, fetchRefreshToken} from "/@/api/playground";
+import {fetchACTokenByDevice, fetchApiData, fetchRefreshToken, fetchUserCode} from "/@/api/playground";
 import * as QRCode from 'qrcode'
 import axios from "axios";
 
@@ -83,7 +83,7 @@ function updateReqAndRes() {
 // Step 1
 const activeName = ref('1');
 const s1Data = reactive({
-  authorization_endpoint: "",
+  token_endpoint: "",
   // redirect_uri: window.location.href.split("?")[0],
   scope: "",
   response_type: "device_code",
@@ -94,7 +94,7 @@ const initialAddress = ref("");
 
 // 修改的同时拼接成url显示在Grant Url中
 function handleS1Change() {
-  initialAddress.value = s1Data.authorization_endpoint.concat(
+  initialAddress.value = s1Data.token_endpoint.concat(
       "?response_type=device_code",
       s1Data.scope?.length > 0 ? "&scope=".concat(s1Data.scope) : "",
       props.cfgData.client_id?.length > 0 ? "&client_id=".concat(props.cfgData.client_id) : ""
@@ -118,19 +118,32 @@ function handleDeviceFlow() {
         lss.addItem(cs);
       }
       // window.location.href = initialAddress.value;
-      axios.post(initialAddress.value).then((res) => {
-        user_code.value = res.data.user_code
-        verification_uri.value = res.data.verification_uri
-        device_code.value = res.data.device_code
-        expires_in.value = res.data.expires_in
-        // 检查是否获取到user_code,若长度不为0，则跳到Step 2
-        if (device_code.value.length === 0 || user_code.value.length === 0 || verification_uri.value.length === 0) {
-          ElMessage.error("Authorization failed. Check your configurations.");
-          return;
+      const dataObject = {
+        initialAddress: initialAddress.value
+      };
+      fetchUserCode(dataObject).then(({code, msg, data}) => {
+        if (code === 0) {
+          const {request, response, rawjson, example} = data;
+          if (rawjson.user_code === undefined || rawjson.user_code === '')
+            return
+          // const {interval, verification_uri, user_code, expires_in, device_code} = rawjson || {};
+          if (user_code !== undefined && user_code !== null) {
+            user_code.value = rawjson.user_code
+            verification_uri.value = rawjson.verification_uri
+            device_code.value = rawjson.device_code
+            expires_in.value = rawjson.expires_in
+            // 检查是否获取到user_code,若长度不为0，则跳到Step 2
+            if (device_code.value.length === 0 || user_code.value.length === 0 || verification_uri.value.length === 0) {
+              ElMessage.error("Authorization failed. Check your configurations.");
+              return;
+            }
+            activeName.value = '2';
+            // 轮询是否获取到token
+            tokenAvailablelong(expires_in.value);
+          }
+        } else {
+          ElMessage.error("Get user_code failed. Please check your configuration!")
         }
-        activeName.value = '2';
-        // 轮询是否获取到token
-        tokenAvailablelong(expires_in.value);
       }).catch((err) => {
         console.error('get user code failed: ', err)
       })
@@ -371,9 +384,9 @@ async function generateQRCode(url) {
 }
 
 watch(props.cfgData, (newValue) => {
-  s1Data.authorization_endpoint = newValue.authorization_endpoint;
+  s1Data.token_endpoint = newValue.token_endpoint;
   s1Data.scope = newValue.default_scope;
-  initialAddress.value = newValue.authorization_endpoint.concat(
+  initialAddress.value = newValue.token_endpoint.concat(
       "?response_type=device_code",
       newValue.default_scope?.length > 0 ? "&scope=".concat(newValue.default_scope) : "",
       newValue.client_id?.length > 0 ? "&client_id=".concat(newValue.client_id) : "",
@@ -417,8 +430,8 @@ const handleDrag = (floatButton, container) => {
             <span class="stepTitle">Step 1: Request for Device Flow Authorization</span>
           </template>
           <el-scrollbar class="fitSide" ref="agS1ContainerRef">
-            <h4 style="text-align: left;margin: 0">Authorization Endpoint</h4>
-            <el-input v-model="s1Data.authorization_endpoint" disabled/>
+            <h4 style="text-align: left;margin: 0">accessToken Endpoint</h4>
+            <el-input v-model="s1Data.token_endpoint" disabled/>
 <!--            <h4 style="text-align: left;margin: 0">Redirect Uri</h4>-->
 <!--            <el-input v-model="s1Data.redirect_uri" disabled/>-->
             <h4 style="text-align: left;margin: 0">Scope</h4>
