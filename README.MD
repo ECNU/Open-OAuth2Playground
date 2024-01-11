@@ -82,11 +82,22 @@ chmod +x control
 ./control pack
 ```
 
-### docker运行（内置测试的oauth2 server服务）
+### docker运行
 
-#### 1. 设置环境变量
+（内置测试的oauth2 server服务）
 
-在`docker-compose.yml`文件中修改`cas-demo`容器的`environment`字段
+#### 1.给`cas_init_script.sh`文件添加执行权限
+
+执行如下命令
+```shell
+chmod +x cas_init_script.sh
+```
+
+#### 2. 修改`docker-compose.yml`文件
+
+##### 2.1 设置环境变量
+
+修改`cas-demo`容器的`environment`字段
 
 ```yaml
 environment:
@@ -102,9 +113,9 @@ environment:
 	- SERVER_PORT=8444
 ```
 
-#### 2. 修改端口映射
+##### 2.2 修改端口映射
 
-在`docker-compose.yml`文件中修改容器的`ports`字段
+修改容器的`ports`字段
 
 如第1步中`SERVER_PORT`非默认值8444，则需将`cas-demo`容器的端口修改为`SERVER_PORT`的值，注意容器和宿主机端口必须相同
 
@@ -129,17 +140,8 @@ ports:
   }
 ```
 
-#### 4. （可选）自定义`cas_init_script.sh`脚本
 
-给予执行权限
-
-```shell
-chmod +x cas_init_script.sh
-```
-
-根据需要对cas的配置进行修改，如数据库中增加用户
-
-#### 5. 启动容器
+#### 4. 启动容器
 
 在`docker-compose.yml`所在目录下执行如下命令
 
@@ -157,6 +159,9 @@ password:123456
 可编辑`cas_init_script.sh`文件或启动后，进入`cas-demo`容器内部修改
 
 
+#### （可选）自定义`cas_init_script.sh`脚本
+
+根据需要对cas的配置进行修改，如数据库中增加用户
 
 ### 配置
 #### 后端配置

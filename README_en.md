@@ -84,8 +84,16 @@ chmod +x control
 ### Running via Docker
 (oauth2 server service with built-in tests)
 
-#### 1. Setting environment variables
+#### 1. Grant execute permission to the `cas_init_script.sh` file
 
+Execute the following command
+```shell
+chmod +x cas_init_script.sh
+```
+
+#### 2. Modify the `docker-compose.yml` file
+
+##### 2.1 Setting Environment Variables
 Modify the `environment` field of the `cas-demo` container in the `docker-compose.yml` file
 
 ```yaml
@@ -102,7 +110,7 @@ environment:
 	- SERVER_PORT=8444
 ```
 
-#### 2. Modify the port mapping
+##### 2.2 Modify the port mapping
 
 Modify the `ports` field of the container in the `docker-compose.yml` file
 
@@ -129,17 +137,7 @@ Set the `cas server` domain name in the `endpoints` field in the `cfg.json` file
 }
 ```
 
-#### 4. (Optional) Customize the `cas_init_script.sh` script
-
-Grant execute permission to `cas_init_script.sh`
-
-```shell
-chmod +x cas_init_script.sh
-```
-
-Make changes to the cas configuration as needed, such as adding users to the database
-
-#### 5. Start the container
+#### 4. Start the container
 
 Execute the following command in the directory where `docker-compose.yml` is located
 
@@ -157,6 +155,12 @@ user:cas
 password:123456
 ```
 You can edit the `cas_init_script.sh` file or enter the `cas-demo` container after startup to update your user.
+
+
+####  (Optional) Customize the `cas_init_script.sh` script
+
+Make changes to the cas configuration as needed, such as adding users to the database
+
 
 ### Configuration
 #### Backend Configuration
