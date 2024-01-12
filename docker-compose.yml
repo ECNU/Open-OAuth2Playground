@@ -1,0 +1,24 @@
+version: '3'
+services:
+  open-oauth2playground:
+    image: lacey620/open-oauth2playground:v1.0
+    container_name: open-oauth2playground
+    restart: always
+    ports:
+      - "8080:80"
+    volumes:
+      - ./cfg.json:/app/Open-OAuth2Playground/cfg.json
+    command: ["/app/Open-OAuth2Playground/OAuth2Playground"]
+  cas-demo:
+    image: lacey620/cas-demo:v6.5.9
+    container_name: cas-demo
+    restart: always
+    ports:
+      - "8444:8444"
+    environment:
+      - CAS_SERVER_NAME=
+      - SERVER_PORT=
+    volumes:
+      - ./cas_init_script.sh:/cas-overlay/cas_init_script.sh
+    entrypoint: ["/bin/bash", "-c"]
+    command: ["/cas-overlay/cas_init_script.sh && java -server -noverify -Xmx2048M -jar /cas-overlay/cas.war"]

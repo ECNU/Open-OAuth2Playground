@@ -19,6 +19,7 @@ Open-OAuth2Playground 是一个仿 Google [OAuth 2.0 Playground](https://develop
 			- [后端编译](#后端编译)
 			- [前端编译](#前端编译)
 			- [统一打包](#统一打包)
+		- [docker运行](#docker运行)
 		- [配置](#配置)
 			- [后端配置](#后端配置)
 				- [后端配置说明](#后端配置说明)
@@ -80,6 +81,87 @@ cd ..
 chmod +x control
 ./control pack
 ```
+
+### docker运行
+
+（内置测试的oauth2 server服务）
+
+#### 1.给`cas_init_script.sh`文件添加执行权限
+
+执行如下命令
+```shell
+chmod +x cas_init_script.sh
+```
+
+#### 2. 修改`docker-compose.yml`文件
+
+##### 2.1 设置环境变量
+
+修改`cas-demo`容器的`environment`字段
+
+```yaml
+environment:
+	- CAS_SERVER_NAME=
+	- SERVER_PORT=
+```
+
+如未设置，默认如下
+
+```yaml
+environment:
+	- CAS_SERVER_NAME=http://localhost:8444
+	- SERVER_PORT=8444
+```
+
+##### 2.2 修改端口映射
+
+修改容器的`ports`字段
+
+如第1步中`SERVER_PORT`非默认值8444，则需将`cas-demo`容器的端口修改为`SERVER_PORT`的值，注意容器和宿主机端口必须相同
+
+```yml
+# open-oauth2playground容器端口，可自行修改
+ports:
+	- "8080:80"
+# cas-demo容器
+ports:
+	- "your_port:your_port"
+```
+
+#### 3. 修改`cfg.json`配置
+
+将`cfg.json`文件中的`endpoints`字段中`cas server`域名设置为第1步的`CAS_SERVER_NAME`，如第1步中未设置，则设置为`http://localhost:8444`
+
+```json
+"endpoints": {
+    "authorization": "http://localhost:8444/cas/oauth2.0/authorize",
+    "token": "http://localhost:8444/cas/oauth2.0/accessToken",
+    "userinfo": "http://localhost:8444/cas/oauth2.0/profile"
+  }
+```
+
+
+#### 4. 启动容器
+
+在`docker-compose.yml`所在目录下执行如下命令
+
+```shell
+docker-compose up
+```
+
+在`cas-domo`容器日志中看到`ready`字样，即启动成功，访问`http://localhost:8080`即可。
+
+cas测试用户为：
+```txt
+user:cas
+password:123456
+```
+可编辑`cas_init_script.sh`文件或启动后，进入`cas-demo`容器内部修改
+
+
+#### （可选）自定义`cas_init_script.sh`脚本
+
+根据需要对cas的配置进行修改，如数据库中增加用户
 
 ### 配置
 #### 后端配置

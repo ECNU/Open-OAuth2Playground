@@ -19,6 +19,7 @@ When used for server-side deployment, it is also very suitable for synchronizing
 			- [Backend Compilation](#backend-compilation)
 			- [Frontend Compilation](#frontend-compilation)
 			- [Unified Packaging](#unified-packaging)
+        - [Running via Docker](#running-via-docker)
 		- [Configuration](#configuration)
 			- [Backend Configuration](#backend-configuration)
 				- [Backend Configuration Description](#backend-configuration-description)
@@ -79,6 +80,87 @@ cd ..
 chmod +x control
 ./control pack
 ```
+
+### Running via Docker
+(oauth2 server service with built-in tests)
+
+#### 1. Grant execute permission to the `cas_init_script.sh` file
+
+Execute the following command
+```shell
+chmod +x cas_init_script.sh
+```
+
+#### 2. Modify the `docker-compose.yml` file
+
+##### 2.1 Setting Environment Variables
+Modify the `environment` field of the `cas-demo` container in the `docker-compose.yml` file
+
+```yaml
+environment:
+	- CAS_SERVER_NAME=
+	- SERVER_PORT=
+```
+
+If not set, the default is as follows
+
+```yaml
+environment:
+	- CAS_SERVER_NAME=http://localhost:8444
+	- SERVER_PORT=8444
+```
+
+##### 2.2 Modify the port mapping
+
+Modify the `ports` field of the container in the `docker-compose.yml` file
+
+If `SERVER_PORT` in step 1 is not the default value of 8444, then you need to change the port of the `cas-demo` container to the value of `SERVER_PORT`, noting that the container and host ports must be the same.
+
+```yml
+# open-oauth2playground container, you can modify it on your own
+ports:
+	- "8080:80"
+# cas-demo container
+ports:
+	- "your_port:your_port"
+```
+
+#### 3. Modify the `cfg.json` configuration
+
+Set the `cas server` domain name in the `endpoints` field in the `cfg.json` file to `CAS_SERVER_NAME` from step 1, or to `http://localhost:8444` if not set in step 1
+
+```json
+"endpoints": {
+	"authorization": "http://localhost:8444/cas/oauth2.0/authorize",
+	"token": "http://localhost:8444/cas/oauth2.0/accessToken",
+	"userinfo": "http://localhost:8444/cas/oauth2.0/profile"
+}
+```
+
+#### 4. Start the container
+
+Execute the following command in the directory where `docker-compose.yml` is located
+
+```shell
+docker-compose up
+```
+
+If you see the word `ready` in the `cas-domo` container log, the startup was successful.
+
+And the cas user for test is:
+
+
+```txt
+user:cas
+password:123456
+```
+You can edit the `cas_init_script.sh` file or enter the `cas-demo` container after startup to update your user.
+
+
+####  (Optional) Customize the `cas_init_script.sh` script
+
+Make changes to the cas configuration as needed, such as adding users to the database
+
 
 ### Configuration
 #### Backend Configuration
