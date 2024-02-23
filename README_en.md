@@ -82,7 +82,7 @@ chmod +x control
 ```
 
 ### Running via Docker
-(oauth2 server service with built-in tests)
+(Built-in oauth2 server for testing)
 
 #### 1. Grant execute permission to the `cas_init_script.sh` file
 
@@ -117,15 +117,17 @@ Modify the `ports` field of the container in the `docker-compose.yml` file
 If `SERVER_PORT` in step 1 is not the default value of 8444, then you need to change the port of the `cas-demo` container to the value of `SERVER_PORT`, noting that the container and host ports must be the same.
 
 ```yml
-# open-oauth2playground container, you can modify it on your own
+# he port of the open-oauth2playground container, you can modify it on your own
 ports:
 	- "8080:80"
-# cas-demo container
+# The port of the cas-demo container, both need to be identical
 ports:
 	- "your_port:your_port"
 ```
 
 #### 3. Modify the `cfg.json` configuration
+
+##### 3.1 Modify the `endpoints` field
 
 Set the `cas server` domain name in the `endpoints` field in the `cfg.json` file to `CAS_SERVER_NAME` from step 1, or to `http://localhost:8444` if not set in step 1
 
@@ -135,6 +137,16 @@ Set the `cas server` domain name in the `endpoints` field in the `cfg.json` file
 	"token": "http://localhost:8444/cas/oauth2.0/accessToken",
 	"userinfo": "http://localhost:8444/cas/oauth2.0/profile"
 }
+```
+
+##### 3.2 Modify the `trust_domain` field
+
+If `CAS_SERVER_NAME` filed is `http://localhost:8444`, add `localhost:8444` to the `trust_domain` field in the `cfg.json` file, and vice versa, add the value of `CAS_SERVER_NAME` that you set.
+
+```json
+ "trust_domain": [
+    "localhost:8444",
+  ]
 ```
 
 #### 4. Start the container
@@ -147,19 +159,39 @@ docker-compose up
 
 If you see the word `ready` in the `cas-domo` container log, the startup was successful.
 
-And the cas user for test is:
+#### 5. Note
 
-
+- **cas test users are as follows:**：
 ```txt
 user:cas
 password:123456
 ```
-You can edit the `cas_init_script.sh` file or enter the `cas-demo` container after startup to update your user.
+You can edit the `cas_init_script.sh` script to add a new user or change the username and password.
+```shell
+INSERT INTO user (username, password, name) VALUES ('cas', '123456', '测试用户');
+```
 
+Or start the `cas-demo` container and go to the /export/data/ directory, connect to the sqlite database cas.db and modify it.
+```shell
+# Enter the cas-demo container
+docker exec -it container_id /bin/bash
 
-####  (Optional) Customize the `cas_init_script.sh` script
+cd /export/data
+# Connect to the database
+sqlite3 cas.db
+```
 
-Make changes to the cas configuration as needed, such as adding users to the database
+- **the service of the cas**
+	- authorization_code | client_credentials | device_flow mode：
+	  ```txt
+      client_id:open-oauth2playground
+      password:open-oauth2playground
+      ```
+		- pkce mode：
+	  ```txt
+      client_id:open-oauth2playground-pkce
+      ```
+You can add a new service yourself in the Open-OAuth2Playground/apereo-cas/etc/services directory.
 
 
 ### Configuration
