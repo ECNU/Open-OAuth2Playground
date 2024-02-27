@@ -1,0 +1,32 @@
+{
+  "@class" : "org.apereo.cas.support.oauth.services.OAuthRegisteredService",
+  "clientId": "open-oauth2playground",
+  "clientSecret": "open-oauth2playground",
+  "serviceId" : "^(http)://.*",
+  "name" : "OAuthService",
+  "id" : 3001,
+  "attributeReleasePolicy": {
+    "@class": "org.apereo.cas.services.ReturnAllowedAttributeReleasePolicy",
+    "allowedAttributes": ["java.util.ArrayList", ["name","username"]]
+  },
+  "generateRefreshToken" : true,
+  "renewRefreshToken" : true,
+  "supportedGrantTypes": [ "java.util.HashSet", [ "authorization_code","refresh_token","client_credentials","password" ] ],
+  "supportedResponseTypes": [ "java.util.HashSet", [ "code","device_code" ] ],
+  "properties" : {
+    "@class" : "java.util.HashMap",
+    "corsAllowCredentials" : {
+      "@class" : "org.apereo.cas.services.DefaultRegisteredServiceProperty",
+      "values" : [ "java.util.HashSet", [ "true" ] ]
+    },
+    "corsAllowedOrigins" : {
+      "@class" : "org.apereo.cas.services.DefaultRegisteredServiceProperty",
+      "values" : [ "java.util.HashSet", [ "*" ] ]
+    },
+    "corsAllowedMethods" : {
+      "@class" : "org.apereo.cas.services.DefaultRegisteredServiceProperty",
+      "values" : [ "java.util.HashSet", [ "POST", "GET", "PUT", "DELETE" ] ]
+    }
+  }
+}
+

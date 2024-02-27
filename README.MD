@@ -84,7 +84,7 @@ chmod +x control
 
 ### docker运行
 
-（内置测试的oauth2 server服务）
+（内置用于测试的oauth2 server服务）
 
 #### 1.给`cas_init_script.sh`文件添加执行权限
 
@@ -117,20 +117,22 @@ environment:
 
 修改容器的`ports`字段
 
-如第1步中`SERVER_PORT`非默认值8444，则需将`cas-demo`容器的端口修改为`SERVER_PORT`的值，注意容器和宿主机端口必须相同
+如第1步中`SERVER_PORT`非默认值8444，则需将`cas-demo`容器的端口修改为您设置的`SERVER_PORT`的值，注意容器和宿主机端口必须相同
 
 ```yml
 # open-oauth2playground容器端口，可自行修改
 ports:
 	- "8080:80"
-# cas-demo容器
+# cas-demo容器端口，两者需一致
 ports:
 	- "your_port:your_port"
 ```
 
 #### 3. 修改`cfg.json`配置
 
-将`cfg.json`文件中的`endpoints`字段中`cas server`域名设置为第1步的`CAS_SERVER_NAME`，如第1步中未设置，则设置为`http://localhost:8444`
+##### 3.1 修改`endpoints`字段
+
+将`cfg.json`文件中的`endpoints`字段中`cas server`的域名设置为第1步的`CAS_SERVER_NAME`，如第1步中未设置，则设置为`http://localhost:8444`
 
 ```json
 "endpoints": {
@@ -139,7 +141,14 @@ ports:
     "userinfo": "http://localhost:8444/cas/oauth2.0/profile"
   }
 ```
+##### 3.2 修改`trust_domain`字段
+若`CAS_SERVER_NAME`是`http://localhost:8444`，则在`cfg.json`文件中的`trust_domain`字段中添加`localhost:8444`,反之添加您设置的`CAS_SERVER_NAME`的值
 
+```json
+ "trust_domain": [
+    "localhost:8444",
+  ]
+```
 
 #### 4. 启动容器
 
@@ -151,17 +160,41 @@ docker-compose up
 
 在`cas-domo`容器日志中看到`ready`字样，即启动成功，访问`http://localhost:8080`即可。
 
-cas测试用户为：
+
+#### 5. 注意
+
+- **cas测试用户为**：
 ```txt
 user:cas
 password:123456
 ```
-可编辑`cas_init_script.sh`文件或启动后，进入`cas-demo`容器内部修改
+可编辑`cas_init_script.sh`脚本添加新用户或修改用户名、密码
+```shell
+INSERT INTO user (username, password, name) VALUES ('cas', '123456', '测试用户');
+```
 
+或启动后进入`cas-demo`容器/export/data/目录下，连接sqlite数据库cas.db后修改
+```shell
+# 进入cas-demo容器
+docker exec -it container_id /bin/bash
 
-#### （可选）自定义`cas_init_script.sh`脚本
+cd /export/data
+# 连接数据库
+sqlite3 cas.db
+```
 
-根据需要对cas的配置进行修改，如数据库中增加用户
+- **cas的service**
+  - authorization_code | client_credentials | device_flow模式：
+    ```txt
+    client_id:open-oauth2playground
+    password:open-oauth2playground
+    ```
+    - pkce模式：
+	```txt
+	client_id:open-oauth2playground-pkce
+	```
+可在Open-OAuth2Playground/apereo-cas/etc/services目录下自行添加新的service
+
 
 ### 配置
 #### 后端配置
