@@ -17,6 +17,7 @@ const props = defineProps({
         token_endpoint: "",
         userinfo_endpoint: "",
         default_scope: "",
+        device_authorization_endpoint: "",
         access_token_type: "",
         client_id: "",
         client_secret: ""
@@ -83,10 +84,10 @@ function updateReqAndRes() {
 // Step 1
 const activeName = ref('1');
 const s1Data = reactive({
-  token_endpoint: "",
+  device_authorization_endpoint: "",
   // redirect_uri: window.location.href.split("?")[0],
   scope: "",
-  response_type: "device_code",
+  // response_type: "device_code",
   // state: "",
 });
 
@@ -94,8 +95,7 @@ const initialAddress = ref("");
 
 // 修改的同时拼接成url显示在Grant Url中
 function handleS1Change() {
-  initialAddress.value = s1Data.token_endpoint.concat(
-      "?response_type=device_code",
+  initialAddress.value = s1Data.device_authorization_endpoint.concat(
       s1Data.scope?.length > 0 ? "&scope=".concat(s1Data.scope) : "",
       props.cfgData.client_id?.length > 0 ? "&client_id=".concat(props.cfgData.client_id) : ""
   );
@@ -118,12 +118,17 @@ function handleDeviceFlow() {
         lss.addItem(cs);
       }
       // window.location.href = initialAddress.value;
+      // const dataObject = {
+      //   initialAddress: initialAddress.value
+      // };
       const dataObject = {
-        initialAddress: initialAddress.value
+        client_id: props.cfgData.client_id,
+        scope: props.cfgData.default_scope
       };
       fetchUserCode(dataObject).then(({code, msg, data}) => {
         if (code === 0) {
           const {request, response, rawjson, example} = data;
+          console.log(rawjson.user_code)
           if (rawjson.user_code === undefined || rawjson.user_code === '')
             return
           // const {interval, verification_uri, user_code, expires_in, device_code} = rawjson || {};
@@ -167,8 +172,8 @@ const qrCodeSrc = ref("");
 function tokenAvailablelong(expire) {
   const dataObject = {
     client_id: props.cfgData.client_id,
-    code: device_code.value,
-    response_type: "device_code",
+    device_code: device_code.value,
+    grant_type: "urn:ietf:params:oauth:grant-type:device_code",
     expires_in: expire
   };
   fetchACTokenByDevice(dataObject).then(({code, msg, data}) => {
@@ -214,10 +219,6 @@ function resetData() {
 function handleRefreshToken() {
   if(props.cfgData.client_id.length === 0){
     ElMessage.error('client_id is empty, please click the config button on the right side, and check the configuration');
-    return;
-  }
-  else if(props.cfgData.client_secret.length === 0){
-    ElMessage.error('client_secret is empty, please click the config button on the right side, and check the configuration');
     return;
   }else if(currentRefreshToken.value.length === 0){
     ElMessage.error('refresh_token is empty, please get the access_token firstly');
@@ -377,22 +378,17 @@ function deleteRow(index) {
 async function generateQRCode(url) {
   try {
     qrCodeSrc.value = await QRCode.toDataURL(url);
-    console.log()
   } catch (err) {
     console.error('Failed to generate QR code: ', err)
   }
 }
 
 watch(props.cfgData, (newValue) => {
-  s1Data.token_endpoint = newValue.token_endpoint;
+  s1Data.device_authorization_endpoint = newValue.device_authorization_endpoint;
   s1Data.scope = newValue.default_scope;
-  initialAddress.value = newValue.token_endpoint.concat(
-      "?response_type=device_code",
+  initialAddress.value = newValue.device_authorization_endpoint.concat(
       newValue.default_scope?.length > 0 ? "&scope=".concat(newValue.default_scope) : "",
       newValue.client_id?.length > 0 ? "&client_id=".concat(newValue.client_id) : "",
-      // "&redirect_uri=",
-      // s1Data.redirect_uri,
-      // s1Data.state?.length > 0 ? "&state=".concat(s1Data.state) : ""
   );
   requestUri.value = newValue.userinfo_endpoint;
   s3TokenType.value = newValue.access_token_type;
@@ -430,14 +426,12 @@ const handleDrag = (floatButton, container) => {
             <span class="stepTitle">Step 1: Request for Device Flow Authorization</span>
           </template>
           <el-scrollbar class="fitSide" ref="agS1ContainerRef">
-            <h4 style="text-align: left;margin: 0">accessToken Endpoint</h4>
-            <el-input v-model="s1Data.token_endpoint" disabled/>
-<!--            <h4 style="text-align: left;margin: 0">Redirect Uri</h4>-->
-<!--            <el-input v-model="s1Data.redirect_uri" disabled/>-->
+            <h4 style="text-align: left;margin: 0">Deivce Authorization Endpoint</h4>
+            <el-input v-model="s1Data.device_authorization_endpoint" disabled/>
             <h4 style="text-align: left;margin: 0">Scope</h4>
-            <el-input v-model="s1Data.scope" placeholder="Scope" @input="handleS1Change" @blur="handleS1Change"/>
-            <h4 style="text-align: left;margin: 0">Response Type</h4>
-            <el-input v-model="s1Data.response_type" placeholder="Response Type" disabled/>
+            <el-input v-model="s1Data.scope" p laceholder="Scope" @input="handleS1Change" @blur="handleS1Change"/>
+            <!-- <h4 style="text-align: left;margin: 0">Response Type</h4>
+            <el-input v-model="s1Data.response_type" placeholder="Response Type" disabled/> -->
             <h4 style="text-align: left;margin: 0">Grant Url</h4>
             <el-input v-model="initialAddress" type="textarea" :autosize="{ minRows: 4, maxRows: 6 }"
                       placeholder="Request grant code address"/>

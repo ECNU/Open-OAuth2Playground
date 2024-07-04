@@ -17,6 +17,7 @@ const props = defineProps({
         token_endpoint: "",
         userinfo_endpoint: "",
         default_scope: "",
+        device_authorization_endpoint: "",
         access_token_type: "",
         client_id: "",
         client_secret: ""

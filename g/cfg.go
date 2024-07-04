@@ -31,9 +31,10 @@ type IpLimitConfig struct {
 EndpointConfig oauth endpoint 配置
 */
 type EndpointConfig struct {
-	Authorization string `json:"authorization"`
-	Token         string `json:"token"`
-	Userinfo      string `json:"userinfo"`
+	Authorization       string `json:"authorization"`
+	Token               string `json:"token"`
+	Userinfo            string `json:"userinfo"`
+	DeviceAuthorization string `json:"device_authorization"`
 }
 
 /*
