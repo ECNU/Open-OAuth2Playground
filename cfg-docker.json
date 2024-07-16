@@ -1,0 +1,26 @@
+{
+  "logger": {
+    "dir": "logs/",
+    "level": "DEBUG",
+    "keepHours": 24
+  },
+  "endpoints": {
+    "authorization": "http://localhost/oauth2/authorize",
+    "token": "http://oauth-server-lite/oauth2/token",
+    "userinfo": "http://oauth-server-lite/oauth2/userinfo",
+    "device_authorization": "http://oauth-server-lite/oauth2/device/authorize"
+  },
+  "iplimit": {
+    "enable": false,
+    "trust_ip": ["127.0.0.1", "::1"]
+  },
+  "http": {
+    "route_base":"/",
+    "trust_proxy": ["127.0.0.1", "::1"],
+    "cors": ["http://127.0.0.1","http://localhost"],
+    "listen": "0.0.0.0:8080"
+  },
+  "trust_domain": ["api.ecnu.edu.cn", "localhost", "oauth-server-lite"],
+  "default_scope": "Basic",
+  "timeout": 10
+}
