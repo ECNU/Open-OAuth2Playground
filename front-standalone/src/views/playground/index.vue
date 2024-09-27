@@ -22,6 +22,7 @@ const configData = reactive({
   token_endpoint: "",
   userinfo_endpoint: "",
   default_scope: "",
+  device_authorization_endpoint: "",
   access_token_type: "bearer",
   client_id: "",
   client_secret: ""
@@ -41,6 +42,8 @@ async function getGlobalConfig() {
   Object.assign(configData, {client_id: id??"", client_secret: secret??""});
   lss.removeItem("id");
   lss.removeItem("secret");
+  console.log('configData')
+  console.log(configData)
 }
 
 function handleSaveTokenType(){
@@ -102,6 +105,9 @@ onMounted(() => {
                   </el-descriptions-item>
                   <el-descriptions-item label="Authorization Endpoint">
                     {{ configData.authorization_endpoint }}
+                  </el-descriptions-item>
+                  <el-descriptions-item label="Device Authorization Endpoint">
+                    {{ configData.device_authorization_endpoint }}
                   </el-descriptions-item>
                   <el-descriptions-item label="Token Endpoint">
                     {{ configData.token_endpoint }}

@@ -13,6 +13,7 @@ type ConfigData struct {
 	TokenEndpoint         string   `json:"token_endpoint"`
 	UserinfoEndpoint      string   `json:"userinfo_endpoint"`
 	DefaultScope          string   `json:"default_scope"`
+	DeviceAuthorization   string   `json:"device_authorization_endpoint"`
 }
 
 func getConfig(c *gin.Context) {
@@ -22,6 +23,7 @@ func getConfig(c *gin.Context) {
 		TokenEndpoint:         g.Config().Endpoints.Token,
 		UserinfoEndpoint:      g.Config().Endpoints.Userinfo,
 		DefaultScope:          g.Config().DefaultScope,
+		DeviceAuthorization:   g.Config().Endpoints.DeviceAuthorization,
 	}
 	c.JSON(http.StatusOK, handleSuccess(res))
 }

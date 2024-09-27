@@ -3,7 +3,6 @@ module github.com/ECNU/Open-OAuth2Playground
 go 1.20
 
 require (
-	github.com/c-robinson/iplib v1.0.6
 	github.com/gin-gonic/gin v1.9.1
 	github.com/stretchr/testify v1.8.4
 	github.com/toolkits/file v0.0.0-20160325033739-a5b3c5147e07

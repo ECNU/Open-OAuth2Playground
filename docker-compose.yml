@@ -1,24 +1,28 @@
 version: '3'
 services:
+  redis:
+    image: redis:latest
+    container_name: oauth-redis
+    ports:
+      - "6379:6379"
   open-oauth2playground:
-    image: lacey620/open-oauth2playground:v1.0
+    image: open-oauth2playground:v2.0
     container_name: open-oauth2playground
     restart: always
     ports:
-      - "8080:80"
+      - "8085:8080"
     volumes:
-      - ./cfg.json:/app/Open-OAuth2Playground/cfg.json
+      - ./cfg-docker.json:/app/Open-OAuth2Playground/cfg.json
     command: ["/app/Open-OAuth2Playground/OAuth2Playground"]
-  cas-demo:
-    image: lacey620/cas-demo:v6.5.9
-    container_name: cas-demo
+  oauth-server-lite:
+#    image: ecnunic/oauth-server-lite:v1.0
+    image: lite-server-test:0716
+    container_name: oauth-server-lite
+    depends_on:
+      - redis
     restart: always
-    ports:
-      - "8444:8444"
     environment:
-      - CAS_SERVER_NAME=
-      - SERVER_PORT=
-    volumes:
-      - ./cas_init_script.sh:/cas-overlay/cas_init_script.sh
-    entrypoint: ["/bin/bash", "-c"]
-    command: ["/cas-overlay/cas_init_script.sh && java -server -noverify -Xmx2048M -jar /cas-overlay/cas.war"]
+      - CLIENT_HOST=127.0.0.1
+    ports:
+      - "80:80"
+      - "8444:8444"
