@@ -5,10 +5,10 @@
     "keepHours": 24
   },
   "endpoints": {
-    "authorization": "http://localhost/oauth2/authorize",
-    "token": "http://oauth-server-lite/oauth2/token",
-    "userinfo": "http://oauth-server-lite/oauth2/userinfo",
-    "device_authorization": "http://oauth-server-lite/oauth2/device/authorize"
+    "authorization": "http://localhost:8081/oauth2/authorize",
+    "device_authorization": "http://oauth-server-lite:8081/oauth2/device/authorize",
+    "token": "http://oauth-server-lite:8081/oauth2/token",
+    "userinfo": "http://oauth-server-lite:8081/oauth2/userinfo"
   },
   "iplimit": {
     "enable": false,
@@ -17,10 +17,10 @@
   "http": {
     "route_base":"/",
     "trust_proxy": ["127.0.0.1", "::1"],
-    "cors": ["http://127.0.0.1","http://localhost"],
-    "listen": "0.0.0.0:8080"
+    "cors": ["localhost", "127.0.0.1"],
+    "listen": "0.0.0.0:80"
   },
-  "trust_domain": ["api.ecnu.edu.cn", "localhost", "oauth-server-lite"],
+  "trust_domain": ["localhost", "oauth-server-lite:8081"],
   "default_scope": "Basic",
   "timeout": 10
 }
