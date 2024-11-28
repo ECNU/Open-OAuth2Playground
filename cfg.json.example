@@ -5,9 +5,10 @@
 		"keepHours": 24
 	},
 	"endpoints": {
-		"authorization": "http://cas.example.org/cas/oauth2.0/authorize",
-		"token": "http://cas.example.org/cas/oauth2.0/accessToken",
-		"userinfo": "http://cas.example.org/cas/oauth2.0/profile"
+		"authorization": "http://oauth.example.org/oauth2/authorize",
+		"device_authorization": "http://oauth.example.org/oauth2/device/authorize",
+		"token": "http://oauth.example.org/oauth2/token",
+		"userinfo": "http://oauth.example.org/oauth2/userinfo"
 	},
 	"iplimit": {
 		"enable": false,
@@ -16,10 +17,10 @@
 	"http": {
 		"route_base":"/",
 		"trust_proxy": ["127.0.0.1", "::1"],
-		"cors": ["http://127.0.0.1:8080","http://localhost:8080"],
+		"cors": ["localhost", "127.0.0.1"],
 		"listen": "0.0.0.0:80"
 	},
-	"trust_domain": ["cas.example.org", "localhost"],
+	"trust_domain": ["localhost", "oauth.example.org"],
 	"default_scope": "Basic",
 	"timeout": 10
 }
