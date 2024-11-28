@@ -28,7 +28,7 @@ RUN CGO_ENABLED=0 go build -o oauth2playground .
 
 
 # 阶段2：运行
-FROM alpine:3.18
+FROM alpine:latest
 
 # 设置工作目录并复制二进制文件
 WORKDIR /app

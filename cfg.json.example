@@ -20,7 +20,7 @@
 		"cors": ["localhost", "127.0.0.1"],
 		"listen": "0.0.0.0:80"
 	},
-	"trust_domain": ["oauth.example.org", "localhost:8081"],
+	"trust_domain": ["localhost", "oauth.example.org"],
 	"default_scope": "Basic",
 	"timeout": 10
 }

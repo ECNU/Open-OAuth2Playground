@@ -6,9 +6,9 @@
   },
   "endpoints": {
     "authorization": "http://localhost:8081/oauth2/authorize",
-    "device_authorization": "http://oauth-server-lite:8081/oauth2/device/authorize",
-    "token": "http://oauth-server-lite:8081/oauth2/token",
-    "userinfo": "http://oauth-server-lite:8081/oauth2/userinfo"
+    "device_authorization": "http://localhost:8081/oauth2/device/authorize",
+    "token": "http://localhost:8081/oauth2/token",
+    "userinfo": "http://localhost:8081/oauth2/userinfo"
   },
   "iplimit": {
     "enable": false,
@@ -20,7 +20,7 @@
     "cors": ["localhost", "127.0.0.1"],
     "listen": "0.0.0.0:80"
   },
-  "trust_domain": ["localhost", "oauth-server-lite:8081"],
+  "trust_domain": ["localhost", "localhost:8081"],
   "default_scope": "Basic",
   "timeout": 10
 }
