@@ -44,7 +44,7 @@ configure_oauth2_playground() {
   ' "$PLAYGROUND_CONFIG_FILE" > "$PLAYGROUND_CONFIG_FILE.tmp" && mv "$PLAYGROUND_CONFIG_FILE.tmp" "$PLAYGROUND_CONFIG_FILE"
 
   # 仅在 trust_domain 中不存在时追加新值
-  jq --arg new_domain "${OAUTH_SERVER_URL}" '
+  jq --arg new_domain "${OAUTH_SERVER_HOST}:${OAUTH_SERVER_PORT}" '
     if .trust_domain | index($new_domain) == null then
       .trust_domain += [$new_domain]
     else
