@@ -6,6 +6,12 @@ FROM node:16-alpine AS frontend-builder
 # 设置工作目录
 WORKDIR /app/Open-OAuth2Playground
 
+# 设置 npm 的超时时间 (ms)
+# ENV npm_config_timeout=5*60*1000
+
+# 设置 npm proxy
+RUN npm config set registry https://registry.npmmirror.com/
+
 # 复制前端项目并构建
 COPY ./front-standalone /app/Open-OAuth2Playground/front-standalone
 RUN cd front-standalone && npm install && npm run build

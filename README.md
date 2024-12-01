@@ -47,7 +47,7 @@ Open-OAuth2Playground 是一个仿 Google [OAuth 2.0 Playground](https://develop
 
 本项目提供 docker 一键部署、手动源码编译运行、二进制文件一键运行和二进制文件托管运行 4 种方式。
 
-docker 运行方式 #TODO
+docker 运行方式
 
 源码编译、二进制文件运行均依赖于 `Open-OAuth2Playground` 二进制文件和 `cfg` 配置文件。默认读取二进制文件平级目录的 `cfg.json` 文件作为配置文件，支持通过 `-c /path/to/cfg` 运行时传参的方式指定特定的 `cfg` 配置文件（systemctl 托管运行时需要自行修改 service 文件）。
 
@@ -55,7 +55,9 @@ docker 运行方式 #TODO
 
 （内置用于测试的 [oauth-server-lite](https://github.com/shanghai-edu/oauth-server-lite/) 服务）
 
-项目提供 `docker-compose.yaml` 文件，可直接一键拉起。
+项目提供 `docker-compose.yaml` 文件，可直接一键拉起。`docker-compose.yaml` 提供了一种基于容器模式启动的方案。此方案可共享 `redis` 和 `oauth-server-lite` 的容器网络，仅供测试使用。
+
+![docker 容器模式下 oauth2playground 结构图](imgs/docker-container.svg)
 
 ```shell
 docker-compose -p oauth-server-lite up -d
@@ -65,26 +67,15 @@ docker-compose -p oauth-server-lite up -d
 
 - 此方式启动时，由于容器内无法直接通过 `localhost` 访问其它服务，因此需要通过访问 service name 的方式 ( `redis:6379` ) 连接 redis 。其它配置见文件。
 - `cas.db` 默认写入用户信息：
-    - `username: cas`，可通过配置 `${CAS_USERNAME}` 修改
-    - `password: 123456`，可通过配置 `${CAS_PASSWORD}` 修改
+    - `username`: `cas`，可通过配置 `${CAS_USERNAME}` 修改
+    - `password`: `123456`，可通过配置 `${CAS_PASSWORD}` 修改
 - `sqlite.db` 默认写入 oauth client 信息：
-    - `client_id: oauth`，可通过配置 `${OAUTH_CLIENT_ID}` 修改
-    - `client_secret: 123456`，可通过配置 `${OAUTH_CLIENT_SECRET}` 修改
-    - `domains: open-oauth2playground`，可通过配置 `${PLAYGROUND_HOST}` 修改
-    - `grant_types: authorization_code,client_credentials,device_flow`，
+    - `client_id`: `oauth`，可通过配置 `${OAUTH_CLIENT_ID}` 修改
+    - `client_secret`: `123456`，可通过配置 `${OAUTH_CLIENT_SECRET}` 修改
+    - `domains`: `open-oauth2playground`，可通过配置 `${PLAYGROUND_HOST}` 修改
+    - `grant_types`: `password`,`authorization_code`,`urn:ietf:params:oauth:grant-type:device_code`,`client_credentials`
 
-[//]: # (todo:这部分要修改)
-- **cas的service**
-    - authorization_code | client_credentials | device_flow模式：
-      ```txt
-      client_id:open-oauth2playground
-      password:open-oauth2playground
-      ```
-        - pkce模式：
-      ```txt
-      client_id:open-oauth2playground-pkce
-      ```
-可在Open-OAuth2Playground/apereo-cas/etc/services目录下自行添加新的service
+- 可在 `Open-OAuth2Playground/apereo-cas/etc/services` 目录下自行添加新的service
 
 ### 方式二、源码编译运行
 
@@ -378,15 +369,67 @@ VUE_APP_API_VERSION=v1
 
 ## 使用
 
+**[Reference 1]** [RFC6749](https://www.rfc-editor.org/rfc/rfc6749.html)
+
+首先需要进入 `Open-OAuth2Playground` 前端首页，在右上角 `Configuration Settings` 完成信息配置：
+
+![客户端配置](imgs/configuration.png)
+
 ### 一、Authorization Code 模式
+
+Authorization Code 模式也被称作授权码模式。步骤如下：
+
+1. 访问 APP 服务，即点击 GO 图标，这时客户端将用户导向认证服务器 (Authorization Server)，即 `apereo-cas` server ；
+2. 用户（登录后）选择是否授权；
+3. 授权后，认证服务器将用户导向重定向 URI，同时返回授权码，即 Step 2 中的 `Authorization Code`；
+4. 通过该授权码，用户可以获得访问令牌 (Token) 和刷新访问令牌。之后就可以携带访问令牌访问资源服务器了，即 Step 3 。
+
+![授权码模式](imgs/authorization-code-mode.png)
 
 ### 二、Resource Owner Password Credentials 模式
 
+Resource Owner Password Credentials 模式也被称作密码模式，步骤如下：
+
+1. 访问 APP 服务，并向客户端提供用户名和密码，然后点击 Get Token ;
+2. 得到访问令牌，即可访问资源服务器。
+
+![密码模式](/imgs/password.png)
+
 ### 三、Client Credentials 模式
+
+Client Credentials 模式也被称作客户端模式。步骤如下：
+
+1. 客户端直接向认证服务器进行身份认证，并要求一个访问令牌（无需用户信息）；
+2. 认证服务器向客户端提供访问令牌，用户使用此令牌访问资源服务器。
+
+![客户端模式](/imgs/client.png)
+
+客户端模式下认证行为是客户端发出的。由于不存在用户信息的绑定，可以看到，虽然请求成功，但用户是无法获得到和个人信息相关的内容的。
 
 ### 四、Device Flow 模式
 
+Device Flow 模式也被称作设备流模式。步骤如下：
+
+1. 访问 APP 服务，即点击 GO 图标，客户端会提供一个用户验证码 (User Code) 。这时客户端会将验证码发送给认证服务器，并监听认证服务器的状态；
+![设备流模式-1](imgs/device-flow-1.png)
+2. 用户可通过扫码或通过认证链接（可以是不同设备）进入认证页面，在有效时间内通过输入验证码完成认证；
+![设备流模式-2](imgs/device-flow-2.png)
+3. 认证成功后，可返回客户端，这时客户端成功监听到用户完成认证并获取访问令牌；
+![设备流模式-3](imgs/device-flow-3.png)
+![设备流模式-4](imgs/device-flow-4.png)
+4. 用户可通过该访问令牌访问资源服务器。
+![设备流模式-5](imgs/device-flow-5.png)
+
 ### 五、PKCE 模式
+
+PKCE (Proof Key for Code Exchange) 模式是一种更安全的授权码模式。步骤如下：
+
+1. 客户端生成一个随机的 `code verifier` (点击 Refresh) ，并通过 `code challenge method` (如 SHA256) 得到 `code challenge`；
+2. 用户同样通过认证服务器授权（点击 GO，并在认证服务器完成认证，由认证服务器重定向回客户端），得到授权码；
+3. 与授权码模式不同，PKCE 授权码模式获取访问令牌需要携带 `code verifier` 进行认证，以防止授权码拦截攻击；
+4. 获得访问令牌后，即可访问资源服务器。
+
+![PKCE 授权码模式](imgs/pkce.png)
 
 ## 鸣谢
 

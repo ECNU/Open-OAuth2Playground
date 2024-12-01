@@ -19,9 +19,9 @@ services:
     ports:
       - "80:80"       # open-oauth2playground 端口
       # - "6379:6379"   # redis 端口
-      - "8080:8080"   # apereo-cas 服务占用 1
+#      - "8080:8080"   # apereo-cas 后端服务占用
       - "8081:8081"   # oauth-server-lite 前端服务
-      - "8444:8444"   # apereo-cas 服务占用 2
+      - "8444:8444"   # apereo-cas 前端服务占用
     networks:
       - open-oauth2playground
   #    volumes:
@@ -52,6 +52,7 @@ services:
       - OAUTH_REDIS_DSN=localhost:6379        # redis 服务地址/域名
       - OAUTH_REDIS_PASSWORD=                 # redis 服务连接密码
       - PLAYGROUND_HOST=localhost             # oauth2playground 服务地址/域名
+      - PLAYGROUND_PORT=80                    # oauth2playground 服务端口号
     depends_on:
       - open-oauth2playground
       - redis

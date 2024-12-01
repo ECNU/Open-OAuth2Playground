@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 构建方式: 本地构建 or 多平台构建打包上传镜像
-BUILD_MODE="local"  # local / remote
+BUILD_MODE="remote"  # local / remote
 
 # DockerHub 用户名、镜像名称和版本号
 USERNAME="ecnunic"
