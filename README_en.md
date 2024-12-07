@@ -64,17 +64,57 @@ docker-compose -p oauth-server-lite up -d
 
 **Notes**
 
-- When starting in this way, since containers cannot directly access other services via `localhost`, you need to connect to redis via the service name (e.g., `redis:6379`). See the file for other configurations.
-- `cas.db` writes default user information:
-	- `username`: `cas`, can be modified via `${CAS_USERNAME}`
-	- `password`: `123456`, can be modified via `${CAS_PASSWORD}`
-- `sqlite.db` writes default oauth client information:
-	- `client_id`: `oauth`, can be modified via `${OAUTH_CLIENT_ID}`
-	- `client_secret`: `123456`, can be modified via `${OAUTH_CLIENT_SECRET}`
-	- `domains`: `open-oauth2playground`, can be modified via `${PLAYGROUND_HOST}`
-	- `grant_types`: `password`,`authorization_code`,`urn:ietf:params:oauth:grant-type:device_code`,`client_credentials`
+- When starting in this way, services within the container cannot directly access other services via `localhost`. Instead, use the service name (e.g., `redis:6379`) to connect to Redis. For additional configurations, see the related files.
+- Regular users do not need to configure any environment variables or mount volumes. Simply start the container. For custom configurations, carefully read these notes.
+- The `cas.db` file includes default user information:
+	- `username`: `cas` (modifiable via `${CAS_USERNAME}`)
+	- `password`: `123456` (modifiable via `${CAS_PASSWORD}`)
+- The `sqlite.db` file includes default OAuth client information:
+	- `client_id`: `oauth` (modifiable via `${OAUTH_CLIENT_ID}`)
+	- `client_secret`: `123456` (modifiable via `${OAUTH_CLIENT_SECRET}`)
+	- `domains`: `open-oauth2playground` (modifiable via `${PLAYGROUND_HOST}`)
+	- `grant_types`: `password`, `authorization_code`, `urn:ietf:params:oauth:grant-type:device_code`, `client_credentials`
+- You can add new services in the `Open-OAuth2Playground/apereo-cas/etc/services` directory.
+- The auto-initialization script is enabled by default. In this case, mounting the `cfg.json` file externally is not allowed. To enable external file mounting, control it via the `CFG_INIT_ENABLE` variable.
 
-- You can add new services in the `Open-OAuth2Playground/apereo-cas/etc/services` directory as needed.
+**Troubleshooting**
+
+- Public Deployment of `oauth-server-lite` Fails to Start
+  - Symptom: The container cannot access container services via the public network.
+  - Cause: Docker's proxy can interfere with container routing. If the container communicates through an internal network, the proxy server may not access the host's public IP.
+  - Solution:
+    ```bash
+    # Clear Proxy Settings
+
+    ## Check kernel configuration in /etc/docker/daemon.json
+    cat /etc/docker/daemon.json
+
+    ## Check user configuration in ~/.docker/config.json
+    cat ~/.docker/config.json
+
+    ## Check system-wide proxy settings
+    ## cat /etc/systemd/system/docker.service.d/http-proxy.conf
+    systemctl show --property=Environment docker
+    
+    ## If the following entries are found, manually remove the variables from /etc/systemd/system/docker.service.d/http-proxy.conf
+    ## >> [Service]
+    ## >> Environment="HTTP_PROXY=http://127.0.0.1:7890"
+    ## >> Environment="HTTPS_PROXY=http://127.0.0.1:7890"
+    ## >> Environment="NO_PROXY=localhost,127.0.0.1"
+
+    ## Clear runtime proxy settings
+    unset HTTP_PROXY
+    unset HTTPS_PROXY
+    unset NO_PROXY
+
+    # Restart Docker
+    sudo systemctl daemon-reload
+    sudo systemctl restart docker
+
+    # Verify the proxy settings have been cleared
+    systemctl show --property=Environment docker
+    docker info | grep -i proxy
+    ```
 
 ### Method Two: Source Code Compilation and Operation
 

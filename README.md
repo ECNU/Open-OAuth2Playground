@@ -66,6 +66,7 @@ docker-compose -p oauth-server-lite up -d
 **注意事项**
 
 - 此方式启动时，由于容器内无法直接通过 `localhost` 访问其它服务，因此需要通过访问 service name 的方式 ( `redis:6379` ) 连接 redis 。其它配置见文件。
+- 普通用户无需配置任何环境变量和卷挂载，直接拉起即可。如需自定义配置，请认真阅读注意事项。
 - `cas.db` 默认写入用户信息：
     - `username`: `cas`，可通过配置 `${CAS_USERNAME}` 修改
     - `password`: `123456`，可通过配置 `${CAS_PASSWORD}` 修改
@@ -75,7 +76,45 @@ docker-compose -p oauth-server-lite up -d
     - `domains`: `open-oauth2playground`，可通过配置 `${PLAYGROUND_HOST}` 修改
     - `grant_types`: `password`,`authorization_code`,`urn:ietf:params:oauth:grant-type:device_code`,`client_credentials`
 
-- 可在 `Open-OAuth2Playground/apereo-cas/etc/services` 目录下自行添加新的service
+- 可在 `Open-OAuth2Playground/apereo-cas/etc/services` 目录下自行添加新的 service 。
+- 默认开启自动初始化脚本，此时不允许挂载 `cfg.json` 文件。若需要外部挂载文件，可通过 `CFG_INIT_ENABLE` 进行控制。
+
+**TroubleShooting**
+
+- 公网部署 `oauth-server-lite` 容器无法正常启动，表现为容器内部无法通过公网访问容器服务：
+  - docker proxy 会影响容器路由。如果容器通过内网访问，代理服务器可能无法访问宿主机的公网 IP。
+  - 解决方案：
+    ```shell
+    # 清除代理
+    
+    ## 检查 /etc/docker/daemon.json  内核配置
+    cat /etc/docker/daemon.json
+    
+    ## 检查 ~/.docker/config.json 用户配置文件
+    cat /etc/docker/daemon.json
+    
+    ## 检查 系统范围的代理设置
+    ## cat /etc/systemd/system/docker.service.d/http-proxy.conf
+    systemctl show --property=Environment docker
+    ## 如果出现以下内容，需要手动删除 /etc/systemd/system/docker.service.d/http-proxy.conf 中的变量
+    ## >> [Service]
+    ## >> Environment="HTTP_PROXY=http://127.0.0.1:7890"
+    ## >> Environment="HTTPS_PROXY=http://127.0.0.1:7890"
+    ## >> Environment="NO_PROXY=localhost,127.0.0.1"
+    
+    ## 清除运行时的代理
+    unset HTTP_PROXY
+    unset HTTPS_PROXY
+    unset NO_PROXY
+    
+    # 重启服务
+    sudo systemctl daemon-reload
+    sudo systemctl restart docker
+    
+    # 检查代理是否被清除
+    systemctl show --property=Environment docker
+    docker info | grep -i proxy
+    ```
 
 ### 方式二、源码编译运行
 
