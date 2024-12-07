@@ -10,6 +10,9 @@ set -e  # 监测到错误立即退出
 # 变量定义
 # ========================
 
+# 通过环境变量初始化配置文件功能开关
+CFG_INIT_ENABLE=${CFG_INIT_ENABLE:-1}
+
 # docker 容器中各（配置）文件以及目录的路径
 PATH_ROOT=${PATH_ROOT:-"/oauth2playground"}
 PLAYGROUND_PATH="${PATH_ROOT}/oauth2playground"
@@ -17,8 +20,6 @@ PLAYGROUND_CONFIG_FILE="${PATH_ROOT}/cfg.json"
 
 # 可对外暴露的环境变量
 PLAYGROUND_PORT=${PLAYGROUND_PORT:-"80"}  # oauth2playground 服务端口号
-PLAYGROUND_HOST=${PLAYGROUND_HOST:-"localhost"}  # oauth2playground 服务地址/域名
-CAS_SERVER_HOST=${CAS_SERVER_HOST:-"localhost"}  # apereo-cas 服务地址/域名
 OAUTH_SERVER_PORT=${OAUTH_SERVER_PORT:-"8081"}  # oauth-server-lite 服务端口号
 OAUTH_SERVER_HOST=${OAUTH_SERVER_HOST:-"localhost"}  # oauth-server-lite 服务地址/域名
 OAUTH_SERVER_URL=${OAUTH_SERVER_URL:-"http://${OAUTH_SERVER_HOST}:${OAUTH_SERVER_PORT}"}  # oauth-server-lite 服务 URL
@@ -33,6 +34,7 @@ configure_oauth2_playground() {
 
   # 更新 .endpoints 中的指定字段
   jq --arg url "$OAUTH_SERVER_URL" '
+    .endpoints.authorization = "\($url)/oauth2/authorize" |
     .endpoints.device_authorization = "\($url)/oauth2/device/authorize" |
     .endpoints.token = "\($url)/oauth2/token" |
     .endpoints.userinfo = "\($url)/oauth2/userinfo"
@@ -55,32 +57,6 @@ configure_oauth2_playground() {
   echo "OAuth2 Playground configured successfully!"
 }
 
-configure_domain_parser() {
-  echo "Configuring domain parser..."
-
-  # 检查并添加 PLAYGROUND_DOMAIN 的解析
-  if [ "${PLAYGROUND_HOST}" != "localhost" ] && [ "${PLAYGROUND_HOST}" != "127.0.0.1" ]; then
-    if ! grep -q "${PLAYGROUND_HOST}" /etc/hosts; then
-      echo "127.0.0.1 ${PLAYGROUND_HOST}" >> /etc/hosts
-      echo "Added DNS resolution for PLAYGROUND_HOST: ${PLAYGROUND_HOST}"
-    else
-      echo "DNS resolution for PLAYGROUND_HOST already exists: ${PLAYGROUND_HOST}"
-    fi
-  fi
-
-  # 检查并添加 OAUTH_SERVER_DOMAIN 的解析
-  if [ "${OAUTH_SERVER_HOST}" != "localhost" ] && [ "${OAUTH_SERVER_HOST}" != "127.0.0.1" ]; then
-    if ! grep -q "${OAUTH_SERVER_HOST}" /etc/hosts; then
-      echo "127.0.0.1 ${OAUTH_SERVER_HOST}" >> /etc/hosts
-      echo "Added DNS resolution for OAUTH_SERVER_HOST: ${OAUTH_SERVER_HOST}"
-    else
-      echo "DNS resolution for OAUTH_SERVER_HOST already exists: ${OAUTH_SERVER_HOST}"
-    fi
-  fi
-
-  echo "Domain parser configuration completed!"
-}
-
 # 启动 OAuth2 Playground 服务
 start_oauth2_playground() {
   echo "Starting OAuth2 Playground..."
@@ -91,8 +67,10 @@ start_oauth2_playground() {
 # ========================
 # 主执行流程
 # ========================
-configure_oauth2_playground
-configure_domain_parser
+# 判断 CFG_INIT_ENABLE 是否为 1
+if [ "$CFG_INIT_ENABLE" -eq 1 ]; then
+    configure_oauth2_playground
+fi
 start_oauth2_playground
 
 # 保持脚本运行
