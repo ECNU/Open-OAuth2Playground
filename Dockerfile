@@ -43,7 +43,7 @@ ENV PATH_ROOT=/app
 
 # 安装必要的运行 / 调试工具
 RUN apk update && \
-    apk add --no-cache sudo bash lsof jq curl iproute2 net-tools procps ca-certificates git iputils
+    apk add --no-cache sudo bash vim lsof jq curl iproute2 net-tools procps ca-certificates git iputils
 
 COPY --from=frontend-builder /app/Open-OAuth2Playground/front-standalone/dist /app/front-standalone/dist
 COPY --from=backend-builder /app/Open-OAuth2Playground/oauth2playground .
