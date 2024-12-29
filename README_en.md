@@ -17,28 +17,34 @@ When deployed on the server side, it is also ideal for synchronizing with OAuth2
 **[Table of Contents]**
 
 - [Open-OAuth2Playground](#open-oauth2playground)
-	- [Installation and Operation](#installation-and-operation)
-		- [Method One: Docker One-click Deployment and Operation](#Method-One-Docker-One-click-Deployment-and-Operation)
-		- [Method Two: Source Code Compilation and Operation](#Method-Two-Source-Code-Compilation-and-Operation)
-			- [1. Obtain the Project Source Code](#1-Obtain-the-Project-Source-Code)
-			- [2. Modify the Configuration File](#2-Modify-the-Configuration-File)
-			- [3. Front-end Compilation](#3-Front-end-Compilation)
-			- [4. Back-end Compilation](#4-Back-end-Compilation)
-			- [5. Operation](#5-Operation)
-			- [Unified Packaging](#Unified-Packaging)
-		- [Method Three: Binary Package - Unzip and Run Directly](#Method-Three-Binary-Package---Unzip-and-Run-Directly)
-			- [Linux](#Linux)
-			- [Windows](#Windows)
-		- [Method Four: Binary Package - Systemctl Hosted Operation](#Method-Four-Binary-Package---Systemctl-Hosted-Operation)
-	- [Configuration](#configuration)
-		- [I. Backend Configuration](#I-Backend-Configuration)
-			- [Backend Configuration Description](#Backend-Configuration-Description)
-		- [II. Frontend Configuration](#II-Frontend-Configuration)
-			- [Frontend Configuration Description](#Frontend-Configuration-Description)
-		- [III. Frontend Project Independent Deployment](#III-Frontend-Project-Independent-Deployment)
-			- [Customized Frontend Menu](#Customized-Frontend-Menu)
-	- [Usage](#usage)
-	- [Acknowledgements](#acknowledgements)
+  - [Installation and Operation](#installation-and-operation)
+    - [Method One: Docker One-click Deployment and Operation](#method-one-docker-one-click-deployment-and-operation)
+    - [Method Two: Source Code Compilation and Operation](#method-two-source-code-compilation-and-operation)
+      - [Prerequisites:](#prerequisites)
+      - [1. Obtain the Project Source Code](#1-obtain-the-project-source-code)
+      - [2. Modify the Configuration File](#2-modify-the-configuration-file)
+      - [3. Front-end Compilation](#3-front-end-compilation)
+      - [4. Back-end Compilation](#4-back-end-compilation)
+      - [5. Operation](#5-operation)
+      - [Unified Packaging](#unified-packaging)
+    - [Method Three: Binary Package - Unzip and Run Directly](#method-three-binary-package---unzip-and-run-directly)
+      - [Linux](#linux)
+      - [Windows](#windows)
+    - [Method Four: Binary Package - Systemctl Hosted Operation](#method-four-binary-package---systemctl-hosted-operation)
+  - [Configuration](#configuration)
+    - [I. Backend Configuration](#i-backend-configuration)
+      - [Backend Configuration Description](#backend-configuration-description)
+    - [II. Frontend Configuration](#ii-frontend-configuration)
+      - [Frontend Configuration Description](#frontend-configuration-description)
+    - [III. Frontend Project Independent Deployment](#iii-frontend-project-independent-deployment)
+      - [Customized Frontend Menu](#customized-frontend-menu)
+  - [Usage](#usage)
+    - [I. Authorization Code Mode](#i-authorization-code-mode)
+    - [II. Resource Owner Password Credentials Mode](#ii-resource-owner-password-credentials-mode)
+    - [III. Client Credentials Mode](#iii-client-credentials-mode)
+    - [IV. Device Flow Mode](#iv-device-flow-mode)
+    - [V. PKCE Mode](#v-pkce-mode)
+  - [Acknowledgements](#acknowledgements)
 
 ---
 
@@ -59,7 +65,7 @@ The project provides a `docker-compose.yaml` file, which can be started with one
 ![Docker container mode oauth2playground structure chart](imgs/docker-container.svg)
 
 ```shell
-docker-compose -p oauth-server-lite up -d
+docker-compose up -d
 ```
 
 **Notes**
